@@ -137,9 +137,10 @@
         </div>
 
         <div class="bottom-nav">
-            <div class="nav-item active">
+            <!-- Текст кнопки изменен на "Сегодня" -->
+            <div class="nav-item active" onclick="resetToToday()">
                 <div class="nav-icon">📅</div>
-                <div>График</div>
+                <div>Сегодня</div>
             </div>
             <div class="nav-item" onclick="openModal()">
                 <div class="nav-add-btn">+</div>
@@ -181,10 +182,9 @@
     </div>
 
     <script>
-        // Защита от белого экрана при ошибках
         window.onerror = function(msg) { alert("Ошибка: " + msg); return false; };
 
-        // --- ЗАЩИТА ОТ СЛУЧАЙНОГО ВЫХОДА (Кнопка Назад) ---
+        // --- ЗАЩИТА ОТ СЛУЧАЙНОГО ВЫХОДА ---
         let backPressCount = 0;
         let backPressTimer = null;
 
@@ -194,7 +194,6 @@
             const modal = document.getElementById('modal');
             const settingsModal = document.getElementById('settings-modal');
             
-            // Если открыто окно - закрываем его
             if (modal.classList.contains('active')) {
                 closeModal();
                 history.pushState({ page: "main" }, "");
@@ -206,15 +205,11 @@
                 return;
             }
 
-            // Логика двойного нажатия
             if (backPressCount === 0) {
                 backPressCount++;
                 history.pushState({ page: "main" }, ""); 
                 showAlert("Нажмите 'Назад' еще раз, чтобы выйти из приложения.");
-                
-                backPressTimer = setTimeout(() => {
-                    backPressCount = 0;
-                }, 2000); 
+                backPressTimer = setTimeout(() => { backPressCount = 0; }, 2000); 
             } else {
                 clearTimeout(backPressTimer);
                 history.back();
@@ -380,6 +375,16 @@
         }
 
         function changeWeek(dir) { currentWeekOffset += dir; renderGrid(); }
+
+        // ФУНКЦИЯ ДЛЯ КНОПКИ "СЕГОДНЯ"
+        function resetToToday() {
+            if (currentWeekOffset !== 0) {
+                currentWeekOffset = 0;
+                renderGrid();
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
 
         function openModal() {
             editingShiftId = null;
