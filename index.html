@@ -63,7 +63,10 @@
         .day-header.today { background: var(--diana-bg); }
         .day-header.today .day-name { color: var(--diana-color); }
 
-        .hour-slot { height: var(--hour-height); border-bottom: 1px solid #F0F0F0; }
+        /* Клетки часов (теперь кликабельные) */
+        .hour-slot { height: var(--hour-height); border-bottom: 1px solid #F0F0F0; cursor: pointer; transition: background 0.2s; }
+        .hour-slot:hover { background: #F8F9FA; }
+        .hour-slot:active { background: #E3F2FD; }
 
         .shift-block { position: absolute; left: 1px; right: 1px; border-radius: 4px; padding: 2px; font-size: 7px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer; z-index: 2; display: flex; flex-direction: column; }
         .shift-block.diana { background: var(--diana-bg); border-left: 2px solid var(--diana-color); color: var(--diana-color); }
@@ -296,9 +299,13 @@
 
                 const slotsContainer = document.createElement('div');
                 slotsContainer.style.position = 'relative';
-                HOURS.forEach(() => {
+                
+                // Создаем кликабельные слоты по часам
+                HOURS.forEach(h => {
                     const slot = document.createElement('div');
                     slot.className = 'hour-slot';
+                    // При клике на пустую клетку открываем модалку с подставленным временем
+                    slot.onclick = () => openModalWithTime(dateStr, `${h.toString().padStart(2, '0')}:00`);
                     slotsContainer.appendChild(slot);
                 });
 
@@ -338,19 +345,40 @@
 
         function changeWeek(dir) { currentWeekOffset += dir; renderGrid(); }
 
+        // Открытие модалки по кнопке "+" (пустое время)
         function openModal() {
             editingShiftId = null;
             document.getElementById('modal-title').innerText = "Новая смена";
             document.getElementById('save-btn').innerText = "Сохранить";
             document.getElementById('input-comment').value = "Педикюр";
             
-            // Время по умолчанию не выбрано
             selectedStart = "";
             selectedEnd = "";
             
             document.getElementById('input-date').value = formatDate(new Date());
             document.getElementById('display-start').innerText = "--:--";
             document.getElementById('display-end').innerText = "--:--";
+            
+            document.getElementById('modal').classList.add('active');
+            renderTimeGrids();
+        }
+
+        // Открытие модалки при клике на сетку (с подставленным временем)
+        function openModalWithTime(dateStr, timeStr) {
+            editingShiftId = null;
+            document.getElementById('modal-title').innerText = "Новая смена";
+            document.getElementById('save-btn').innerText = "Сохранить";
+            document.getElementById('input-comment').value = "Педикюр";
+            
+            selectedStart = timeStr;
+            // По умолчанию ставим конец на 1 час позже
+            const hh = parseInt(timeStr.split(':')[0]);
+            const nextHH = (hh + 1).toString().padStart(2, '0');
+            selectedEnd = `${nextHH}:00`;
+            
+            document.getElementById('input-date').value = dateStr;
+            document.getElementById('display-start').innerText = selectedStart;
+            document.getElementById('display-end').innerText = selectedEnd;
             
             document.getElementById('modal').classList.add('active');
             renderTimeGrids();
@@ -374,7 +402,6 @@
         function closeModal() { document.getElementById('modal').classList.remove('active'); }
 
         async function saveShift() {
-            // Проверка на выбор времени
             if (!selectedStart || !selectedEnd) {
                 return showAlert("Пожалуйста, выберите время начала и окончания!");
             }
