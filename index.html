@@ -48,7 +48,7 @@
         .week-range { font-weight: 700; font-size: 16px; }
 
         /* СЕТКА */
-        .grid-container { display: flex; background: var(--card-bg); margin: 5px; border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+        .grid-container { display: flex; background: var(--card-bg); margin: 5px; border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; touch-action: pan-y; }
         
         .time-column { width: 36px; min-width: 36px; background: #FAFAFA; border-right: 1px solid #EEE; }
         .time-label { height: var(--hour-height); font-size: 9px; color: #999; text-align: right; padding-right: 3px; padding-top: 6px; border-bottom: 1px dashed #EEE; }
@@ -137,7 +137,6 @@
         </div>
 
         <div class="bottom-nav">
-            <!-- Текст кнопки изменен на "Сегодня" -->
             <div class="nav-item active" onclick="resetToToday()">
                 <div class="nav-icon">📅</div>
                 <div>Сегодня</div>
@@ -376,7 +375,6 @@
 
         function changeWeek(dir) { currentWeekOffset += dir; renderGrid(); }
 
-        // ФУНКЦИЯ ДЛЯ КНОПКИ "СЕГОДНЯ"
         function resetToToday() {
             if (currentWeekOffset !== 0) {
                 currentWeekOffset = 0;
@@ -514,6 +512,37 @@
                 ge.appendChild(ce);
             });
         }
+
+        // --- СВАЙПЫ (ПРОЛИСТЫВАНИЕ) ---
+        let touchStartX = 0;
+        let touchStartY = 0;
+        const swipeThreshold = 50; // Минимальная длина свайпа (в пикселях)
+
+        const gridContainer = document.getElementById('grid-container');
+
+        gridContainer.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        gridContainer.addEventListener('touchend', e => {
+            const touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+            
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+
+            // Проверяем, что свайп был горизонтальным (а не скроллом вниз)
+            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > swipeThreshold) {
+                if (diffX > 0) {
+                    // Свайп вправо (предыдущая неделя)
+                    changeWeek(-1);
+                } else {
+                    // Свайп влево (следующая неделя)
+                    changeWeek(1);
+                }
+            }
+        }, { passive: true });
 
         window.onload = async function() {
             await loadUsers();
