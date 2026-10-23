@@ -7,13 +7,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #FCF8F9;
+            --bg-color: #FFF0F5; /* Нежно-розовый фон */
             --text-main: #2C2C2C;
             --card-bg: #FFFFFF;
             --green-light: #E8F5E9;
             --green-dark: #1B5E20;
             --green-border: #A5D6A7;
             --shadow: 0 4px 16px rgba(0,0,0,0.06);
+            --pink-accent: #FF8DA1;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -27,7 +28,7 @@
         .btn.active { background: var(--green-light); color: var(--green-dark); box-shadow: inset 0 0 0 2px var(--green-border); }
         
         .input-group { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
-        input[type="password"], input[type="text"] { background: var(--card-bg); border: none; padding: 16px; border-radius: 16px; font-size: 16px; box-shadow: var(--shadow); outline: none; color: var(--text-main); width: 100%; margin-bottom: 15px; }
+        input[type="password"], input[type="text"], input[type="date"] { background: var(--card-bg); border: none; padding: 16px; border-radius: 16px; font-size: 16px; box-shadow: var(--shadow); outline: none; color: var(--text-main); width: 100%; margin-bottom: 15px; }
 
         .hidden { display: none !important; }
 
@@ -106,6 +107,9 @@
         <div class="modal">
             <h2 id="modal-title">Новая смена</h2>
             
+            <label class="label">Дата смены</label>
+            <input type="date" id="input-date">
+
             <label class="label">Услуга / Комментарий</label>
             <input type="text" id="input-comment" value="Педикюр">
 
@@ -152,7 +156,7 @@
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-screen').classList.remove('hidden');
                 document.getElementById('greeting').innerText = `💅 Привет, ${currentMaster}`;
-                loadShifts(); // Загружаем данные с сервера
+                loadShifts(); 
             } else {
                 alert("Выберите имя или неверный пароль!");
             }
@@ -164,7 +168,7 @@
                 const response = await fetch(`${API_URL}/shifts`);
                 if (!response.ok) throw new Error("Ошибка сервера");
                 shiftsDB = await response.json();
-                renderCalendar(); // Рисуем календарь, когда данные пришли
+                renderCalendar(); 
             } catch (e) {
                 console.error(e);
                 alert("Не удалось загрузить данные. Сервер просыпается, подождите 30 секунд и обновите страницу.");
@@ -178,13 +182,16 @@
             }
 
             const comment = document.getElementById('input-comment').value;
-            const dates = getWeekDates(currentWeekOffset);
-            const todayStr = formatDate(new Date());
-            const targetDate = dates.find(d => formatDate(d) === todayStr) ? new Date() : dates[0];
+            const selectedDate = document.getElementById('input-date').value;
+
+            if (!selectedDate) {
+                alert("Пожалуйста, выберите дату!");
+                return;
+            }
 
             const newShift = {
                 master: currentMaster,
-                date: formatDate(targetDate),
+                date: selectedDate,
                 start: selectedStart,
                 end: selectedEnd,
                 comment: comment
@@ -308,6 +315,14 @@
         // --- МОДАЛЬНОЕ ОКНО ---
         function openModal() {
             document.getElementById('modal').classList.add('active');
+            
+            // Подставляем сегодняшнюю дату по умолчанию
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            document.getElementById('input-date').value = `${yyyy}-${mm}-${dd}`;
+
             renderTimeGrids();
         }
 
