@@ -17,7 +17,6 @@
             --card-bg: #FFFFFF;
             --shadow: 0 2px 8px rgba(0,0,0,0.05);
             
-            /* Цвета */
             --diana-color: #2196F3;
             --diana-bg: #E3F2FD;
             --nastya-color: #F44336;
@@ -51,26 +50,21 @@
         /* СЕТКА */
         .grid-container { display: flex; background: var(--card-bg); margin: 5px; border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
         
-        /* Колонка с часами (сузили) */
         .time-column { width: 36px; min-width: 36px; background: #FAFAFA; border-right: 1px solid #EEE; }
         .time-label { height: var(--hour-height); font-size: 9px; color: #999; text-align: right; padding-right: 3px; padding-top: 6px; border-bottom: 1px dashed #EEE; }
         
-        /* Колонки с днями */
         .days-wrapper { display: flex; flex: 1; position: relative; }
         .day-column { flex: 1; min-width: 0; border-right: 1px solid #EEE; position: relative; }
         .day-column:last-child { border-right: none; }
         
-        /* Заголовки дней (уменьшили шрифт) */
         .day-header { position: sticky; top: 0; background: var(--card-bg); padding: 6px 2px; text-align: center; border-bottom: 2px solid #EEE; z-index: 5; }
         .day-name { font-weight: 700; font-size: 10px; }
         .day-date { font-size: 9px; color: #777; margin-top: 2px; }
         .day-header.today { background: var(--diana-bg); }
         .day-header.today .day-name { color: var(--diana-color); }
 
-        /* Сетка часов */
         .hour-slot { height: var(--hour-height); border-bottom: 1px solid #F0F0F0; }
 
-        /* Блоки смен (очень компактные) */
         .shift-block { position: absolute; left: 1px; right: 1px; border-radius: 4px; padding: 2px; font-size: 7px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer; z-index: 2; display: flex; flex-direction: column; }
         .shift-block.diana { background: var(--diana-bg); border-left: 2px solid var(--diana-color); color: var(--diana-color); }
         .shift-block.nastya { background: var(--nastya-bg); border-left: 2px solid var(--nastya-color); color: var(--nastya-color); }
@@ -162,9 +156,9 @@
             <input type="date" id="input-date">
             <label class="label">Услуга</label>
             <input type="text" id="input-comment" value="Педикюр">
-            <label class="label">Начало: <span id="display-start">10:00</span></label>
+            <label class="label">Начало: <span id="display-start">--:--</span></label>
             <div class="time-grid" id="grid-start"></div>
-            <label class="label">Конец: <span id="display-end">18:00</span></label>
+            <label class="label">Конец: <span id="display-end">--:--</span></label>
             <div class="time-grid" id="grid-end"></div>
             <button class="btn primary" id="save-btn" onclick="saveShift()">Сохранить</button>
             <button class="btn" style="margin-top:10px;" onclick="closeModal()">Отмена</button>
@@ -177,7 +171,6 @@
             <label class="label">Новое имя</label>
             <input type="text" id="settings-name">
             <label class="label">Новый пароль</label>
-            <!-- Сократили текст подсказки, чтобы влезал -->
             <input type="password" id="settings-password" placeholder="Не менять">
             <button class="btn primary" onclick="saveSettings()">Сохранить</button>
             <button class="btn" style="margin-top:10px; color:red;" onclick="logout()">Выйти</button>
@@ -191,8 +184,8 @@
         
         let currentMaster = null;
         let currentWeekOffset = 0;
-        let selectedStart = "10:00";
-        let selectedEnd = "18:00";
+        let selectedStart = "";
+        let selectedEnd = "";
         let shiftsDB = []; 
         let editingShiftId = null; 
 
@@ -350,10 +343,15 @@
             document.getElementById('modal-title').innerText = "Новая смена";
             document.getElementById('save-btn').innerText = "Сохранить";
             document.getElementById('input-comment').value = "Педикюр";
-            selectedStart = "10:00"; selectedEnd = "18:00";
+            
+            // Время по умолчанию не выбрано
+            selectedStart = "";
+            selectedEnd = "";
+            
             document.getElementById('input-date').value = formatDate(new Date());
-            document.getElementById('display-start').innerText = selectedStart;
-            document.getElementById('display-end').innerText = selectedEnd;
+            document.getElementById('display-start').innerText = "--:--";
+            document.getElementById('display-end').innerText = "--:--";
+            
             document.getElementById('modal').classList.add('active');
             renderTimeGrids();
         }
@@ -376,7 +374,14 @@
         function closeModal() { document.getElementById('modal').classList.remove('active'); }
 
         async function saveShift() {
-            if (selectedStart >= selectedEnd) return showAlert("Конец должен быть позже начала");
+            // Проверка на выбор времени
+            if (!selectedStart || !selectedEnd) {
+                return showAlert("Пожалуйста, выберите время начала и окончания!");
+            }
+            if (selectedStart >= selectedEnd) {
+                return showAlert("Конец должен быть позже начала");
+            }
+            
             const date = document.getElementById('input-date').value;
             const comment = document.getElementById('input-comment').value;
             
