@@ -127,6 +127,31 @@
         .close-cross:active { color: #333; }
         .modal h2 { font-size: 20px; margin-bottom: 15px; text-align: center; padding: 0 20px; }
 
+        /* Быстрые кнопки выбора длительности */
+        .duration-grid {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .duration-btn {
+            flex: 1;
+            background: #F0F0F0;
+            padding: 12px 0;
+            text-align: center;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #555;
+            border: 1px solid transparent;
+        }
+        .duration-btn.active {
+            background: #E3F2FD;
+            color: #1976D2;
+            border-color: #90CAF9;
+        }
+
         .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
         .time-cell { background: #F0F0F0; padding: 10px 0; text-align: center; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; }
         .time-cell.selected { background: var(--diana-bg); color: var(--diana-color); box-shadow: inset 0 0 0 2px var(--diana-color); }
@@ -203,7 +228,6 @@
         </div>
     </div>
 
-    <!-- ОКНО ДЛЯ СВОЕЙ СМЕНЫ -->
     <div class="modal-overlay" id="action-modal">
         <div class="modal action-modal">
             <div class="close-cross" onclick="closeActionModal()">✕</div>
@@ -223,10 +247,21 @@
             <input type="date" id="input-date">
             <label class="label">Услуга</label>
             <input type="text" id="input-comment" value="Педикюр">
+            
             <label class="label">Начало: <span id="display-start">--:--</span></label>
             <div class="time-grid" id="grid-start"></div>
+            
+            <!-- НОВЫЙ БЛОК С ДЛИТЕЛЬНОСТЬЮ -->
+            <label class="label">Длительность</label>
+            <div class="duration-grid">
+                <div class="duration-btn" onclick="setDuration(1)">1 час</div>
+                <div class="duration-btn" onclick="setDuration(1.5)">1,5 часа</div>
+                <div class="duration-btn" onclick="setDuration(2)">2 часа</div>
+            </div>
+
             <label class="label">Конец: <span id="display-end">--:--</span></label>
             <div class="time-grid" id="grid-end"></div>
+            
             <button class="btn primary" id="save-btn" onclick="saveShift()">Сохранить</button>
             <button class="btn" style="margin-top:10px;" onclick="closeModal()">Отмена</button>
         </div>
@@ -445,8 +480,6 @@
 
                     block.onclick = (e) => { 
                         e.stopPropagation(); 
-                        // Если это СВОЯ смена - открываем редактирование
-                        // Если ЧУЖАЯ - показываем уведомление о занятости
                         if (shift.master === currentMaster) {
                             editShift(shift.id);
                         } else {
@@ -525,6 +558,10 @@
             document.getElementById('input-date').value = formatDate(new Date());
             document.getElementById('display-start').innerText = "--:--";
             document.getElementById('display-end').innerText = "--:--";
+            
+            // Сбрасываем активные кнопки длительности
+            document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
+            
             document.getElementById('modal').classList.add('active');
             history.pushState({ page: "edit" }, "");
             renderTimeGrids();
@@ -546,6 +583,9 @@
             document.getElementById('display-start').innerText = selectedStart;
             document.getElementById('display-end').innerText = selectedEnd;
             
+            // Сбрасываем кнопки при открытии
+            document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
+            
             document.getElementById('modal').classList.add('active');
             history.pushState({ page: "edit" }, "");
             renderTimeGrids();
@@ -562,12 +602,43 @@
             selectedStart = shift.start; selectedEnd = shift.end;
             document.getElementById('display-start').innerText = selectedStart;
             document.getElementById('display-end').innerText = selectedEnd;
+            
+            // Сбрасываем кнопки
+            document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
+            
             document.getElementById('modal').classList.add('active');
             history.pushState({ page: "edit" }, "");
             renderTimeGrids();
         }
 
         function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+        // ФУНКЦИЯ УСТАНОВКИ ДЛИТЕЛЬНОСТИ
+        function setDuration(hours) {
+            if (!selectedStart) {
+                return showAlert("Сначала выберите время начала!");
+            }
+            
+            const parts = selectedStart.split(':');
+            const startMins = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+            const endMins = startMins + (hours * 60);
+            
+            const endH = Math.floor(endMins / 60);
+            const endM = endMins % 60;
+            
+            if (endH >= 24) {
+                return showAlert("Смена не может заканчиваться позже 23:30");
+            }
+            
+            selectedEnd = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+            document.getElementById('display-end').innerText = selectedEnd;
+            
+            // Подсветка активной кнопки
+            document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            renderTimeGrids();
+        }
 
         async function saveShift() {
             if (!selectedStart || !selectedEnd) return showAlert("Выберите время начала и окончания!");
