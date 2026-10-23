@@ -37,6 +37,7 @@
         .btn { background: var(--card-bg); color: var(--text-main); border: none; padding: 16px; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow); text-align: center; width: 100%; }
         .btn.primary { background: #E8F5E9; color: #1B5E20; box-shadow: inset 0 0 0 2px #A5D6A7; }
         .btn.active { background: #E8F5E9; color: #1B5E20; box-shadow: inset 0 0 0 2px #A5D6A7; }
+        .btn.danger { background: #FFEBEE; color: #C62828; box-shadow: inset 0 0 0 2px #FFCDD2; }
         .input-group { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
         input[type="password"], input[type="text"], input[type="date"] { background: var(--card-bg); border: none; padding: 16px; border-radius: 16px; font-size: 16px; box-shadow: var(--shadow); outline: none; color: var(--text-main); width: 100%; margin-bottom: 15px; }
 
@@ -92,6 +93,10 @@
         .time-cell { background: #F0F0F0; padding: 10px 0; text-align: center; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
         .time-cell.selected { background: var(--diana-bg); color: var(--diana-color); box-shadow: inset 0 0 0 2px var(--diana-color); }
         .label { font-weight: 600; margin-bottom: 5px; display: block; font-size: 13px; }
+        
+        /* ОКНО ДЕЙСТВИЙ */
+        .action-modal { text-align: center; }
+        .action-info { font-size: 16px; font-weight: 600; margin-bottom: 20px; color: #555; }
         
         .alert-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .alert-overlay.active { opacity: 1; pointer-events: auto; }
@@ -151,9 +156,21 @@
         </div>
     </div>
 
+    <!-- ОКНО ДЕЙСТВИЙ СМЕНЫ -->
+    <div class="modal-overlay" id="action-modal">
+        <div class="modal action-modal">
+            <h2 id="action-title">Смена</h2>
+            <div class="action-info" id="action-info"></div>
+            <button class="btn primary" onclick="actionEdit()">✏️ Редактировать</button>
+            <button class="btn danger" style="margin-top:10px;" id="action-delete-btn" onclick="actionDelete()">🗑️ Удалить смену</button>
+            <button class="btn" style="margin-top:10px;" onclick="closeActionModal()">Отмена</button>
+        </div>
+    </div>
+
+    <!-- ОКНО РЕДАКТИРОВАНИЯ -->
     <div class="modal-overlay" id="modal">
         <div class="modal">
-            <h2 id="modal-title">Новая смена</h2>
+            <h2 id="modal-title">Смена</h2>
             <label class="label">Дата</label>
             <input type="date" id="input-date">
             <label class="label">Услуга</label>
@@ -192,17 +209,11 @@
         window.addEventListener('popstate', function (e) {
             const modal = document.getElementById('modal');
             const settingsModal = document.getElementById('settings-modal');
+            const actionModal = document.getElementById('action-modal');
             
-            if (modal.classList.contains('active')) {
-                closeModal();
-                history.pushState({ page: "main" }, "");
-                return;
-            }
-            if (settingsModal.classList.contains('active')) {
-                closeSettingsModal();
-                history.pushState({ page: "main" }, "");
-                return;
-            }
+            if (modal.classList.contains('active')) { closeModal(); history.pushState({ page: "main" }, ""); return; }
+            if (settingsModal.classList.contains('active')) { closeSettingsModal(); history.pushState({ page: "main" }, ""); return; }
+            if (actionModal.classList.contains('active')) { closeActionModal(); history.pushState({ page: "main" }, ""); return; }
 
             if (backPressCount === 0) {
                 backPressCount++;
@@ -223,6 +234,7 @@
         let selectedEnd = "";
         let shiftsDB = []; 
         let editingShiftId = null; 
+        let activeShiftId = null; // Для окна действий
 
         const HOURS = [];
         for (let h = 8; h <= 23; h++) HOURS.push(h);
@@ -360,11 +372,28 @@
                         <div class="shift-time">${shift.start.substring(0,5)}</div>
                     `;
 
-                    if (shift.master === currentMaster) {
-                        block.onclick = (e) => { e.stopPropagation(); editShift(shift.id); };
-                    } else {
-                        block.onclick = (e) => { e.stopPropagation(); showAlert(`${shift.master}: ${shift.start}-${shift.end} (${shift.comment})`); };
-                    }
+                    // Логика долгого нажатия
+                    let pressTimer;
+                    block.addEventListener('touchstart', (e) => {
+                        pressTimer = setTimeout(() => {
+                            openActionModal(shift.id);
+                        }, 500); // 500 мс для долгого нажатия
+                    }, {passive: true});
+                    
+                    block.addEventListener('touchend', (e) => {
+                        clearTimeout(pressTimer);
+                    });
+                    block.addEventListener('touchmove', (e) => {
+                        clearTimeout(pressTimer); // Отменяем, если начали скроллить
+                    });
+
+                    // Обычный клик (для ПК или быстрого доступа)
+                    block.onclick = (e) => { 
+                        e.stopPropagation(); 
+                        if (shift.master === currentMaster) editShift(shift.id);
+                        else openActionModal(shift.id);
+                    };
+                    
                     slotsContainer.appendChild(block);
                 });
 
@@ -384,6 +413,50 @@
             }
         }
 
+        // --- ОКНО ДЕЙСТВИЙ ---
+        function openActionModal(id) {
+            const shift = shiftsDB.find(s => s.id === id);
+            if (!shift) return;
+            activeShiftId = id;
+
+            document.getElementById('action-info').innerText = `${shift.start} — ${shift.end} (${shift.comment})`;
+            
+            const delBtn = document.getElementById('action-delete-btn');
+            if (shift.master === currentMaster) {
+                delBtn.style.display = 'block';
+            } else {
+                delBtn.style.display = 'none';
+            }
+
+            document.getElementById('action-modal').classList.add('active');
+            history.pushState({ page: "action" }, "");
+        }
+
+        function closeActionModal() {
+            document.getElementById('action-modal').classList.remove('active');
+            activeShiftId = null;
+        }
+
+        function actionEdit() {
+            closeActionModal();
+            editShift(activeShiftId);
+        }
+
+        async function actionDelete() {
+            const shift = shiftsDB.find(s => s.id === activeShiftId);
+            if (shift.master !== currentMaster) return showAlert("Вы не можете удалить чужую смену");
+            
+            if (confirm("Удалить эту смену?")) {
+                showLoading();
+                try {
+                    await fetch(`${API_URL}/shifts/${activeShiftId}`, { method: 'DELETE' });
+                    closeActionModal();
+                    loadShifts();
+                } catch (e) { hideLoading(); showAlert("Ошибка удаления"); }
+            }
+        }
+
+        // --- РЕДАКТИРОВАНИЕ ---
         function openModal() {
             editingShiftId = null;
             document.getElementById('modal-title').innerText = "Новая смена";
@@ -398,6 +471,7 @@
             document.getElementById('display-end').innerText = "--:--";
             
             document.getElementById('modal').classList.add('active');
+            history.pushState({ page: "edit" }, "");
             renderTimeGrids();
         }
 
@@ -417,6 +491,7 @@
             document.getElementById('display-end').innerText = selectedEnd;
             
             document.getElementById('modal').classList.add('active');
+            history.pushState({ page: "edit" }, "");
             renderTimeGrids();
         }
 
@@ -432,18 +507,15 @@
             document.getElementById('display-start').innerText = selectedStart;
             document.getElementById('display-end').innerText = selectedEnd;
             document.getElementById('modal').classList.add('active');
+            history.pushState({ page: "edit" }, "");
             renderTimeGrids();
         }
 
         function closeModal() { document.getElementById('modal').classList.remove('active'); }
 
         async function saveShift() {
-            if (!selectedStart || !selectedEnd) {
-                return showAlert("Пожалуйста, выберите время начала и окончания!");
-            }
-            if (selectedStart >= selectedEnd) {
-                return showAlert("Конец должен быть позже начала");
-            }
+            if (!selectedStart || !selectedEnd) return showAlert("Выберите время начала и окончания!");
+            if (selectedStart >= selectedEnd) return showAlert("Конец должен быть позже начала");
             
             const date = document.getElementById('input-date').value;
             const comment = document.getElementById('input-comment').value;
@@ -467,6 +539,7 @@
             document.getElementById('settings-name').value = currentMaster;
             document.getElementById('settings-password').value = '';
             document.getElementById('settings-modal').classList.add('active');
+            history.pushState({ page: "settings" }, "");
         }
         function closeSettingsModal() { document.getElementById('settings-modal').classList.remove('active'); }
         
@@ -513,11 +586,10 @@
             });
         }
 
-        // --- СВАЙПЫ (ПРОЛИСТЫВАНИЕ) ---
+        // --- СВАЙПЫ ---
         let touchStartX = 0;
         let touchStartY = 0;
-        const swipeThreshold = 50; // Минимальная длина свайпа (в пикселях)
-
+        const swipeThreshold = 50;
         const gridContainer = document.getElementById('grid-container');
 
         gridContainer.addEventListener('touchstart', e => {
@@ -528,19 +600,12 @@
         gridContainer.addEventListener('touchend', e => {
             const touchEndX = e.changedTouches[0].screenX;
             const touchEndY = e.changedTouches[0].screenY;
-            
             const diffX = touchEndX - touchStartX;
             const diffY = touchEndY - touchStartY;
 
-            // Проверяем, что свайп был горизонтальным (а не скроллом вниз)
             if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > swipeThreshold) {
-                if (diffX > 0) {
-                    // Свайп вправо (предыдущая неделя)
-                    changeWeek(-1);
-                } else {
-                    // Свайп влево (следующая неделя)
-                    changeWeek(1);
-                }
+                if (diffX > 0) changeWeek(-1);
+                else changeWeek(1);
             }
         }, { passive: true });
 
