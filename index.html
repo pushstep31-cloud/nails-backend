@@ -71,7 +71,16 @@
         .hour-slot { height: var(--hour-height); border-bottom: 1px solid #F0F0F0; cursor: pointer; transition: background 0.2s; }
         .hour-slot:active { background: #E3F2FD; }
 
-        .shift-block { position: absolute; left: 1px; right: 1px; border-radius: 4px; padding: 2px; font-size: 7px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer; z-index: 2; display: flex; flex-direction: column; }
+        /* БЛОК СМЕНЫ (с поддержкой перетаскивания) */
+        .shift-block { 
+            position: absolute; left: 1px; right: 1px; border-radius: 4px; padding: 2px; 
+            font-size: 7px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+            cursor: grab; z-index: 2; display: flex; flex-direction: column;
+            transition: transform 0.1s, box-shadow 0.1s, opacity 0.2s;
+        }
+        .shift-block:active { cursor: grabbing; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transform: scale(1.05); z-index: 10; }
+        .shift-block.dragging { opacity: 0.5; transform: scale(0.95); }
+        
         .shift-block.diana { background: var(--diana-bg); border-left: 2px solid var(--diana-color); color: var(--diana-color); }
         .shift-block.nastya { background: var(--nastya-bg); border-left: 2px solid var(--nastya-color); color: var(--nastya-color); }
         
@@ -127,34 +136,11 @@
         .close-cross:active { color: #333; }
         .modal h2 { font-size: 20px; margin-bottom: 15px; text-align: center; padding: 0 20px; }
 
-        /* Быстрые кнопки выбора длительности */
-        .duration-grid {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-        .duration-btn {
-            flex: 1;
-            background: #F0F0F0;
-            padding: 12px 0;
-            text-align: center;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: #555;
-            border: 1px solid transparent;
-        }
-        .duration-btn.active {
-            background: #E3F2FD;
-            color: #1976D2;
-            border-color: #90CAF9;
-        }
+        /* Кнопки длительности */
+        .duration-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+        .duration-btn { background: #F0F0F0; padding: 14px 0; text-align: center; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.2s; color: #555; border: 1px solid transparent; }
+        .duration-btn.active { background: #E3F2FD; color: #1976D2; border-color: #90CAF9; }
 
-        .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
-        .time-cell { background: #F0F0F0; padding: 10px 0; text-align: center; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; }
-        .time-cell.selected { background: var(--diana-bg); color: var(--diana-color); box-shadow: inset 0 0 0 2px var(--diana-color); }
         .label { font-weight: 600; margin-bottom: 5px; display: block; font-size: 13px; }
         
         .action-modal { text-align: center; }
@@ -248,19 +234,18 @@
             <label class="label">Услуга</label>
             <input type="text" id="input-comment" value="Педикюр">
             
-            <!-- ПЕРЕМЕЩЕННЫЙ БЛОК ДЛИТЕЛЬНОСТИ -->
-            <label class="label">Длительность</label>
+            <label class="label" style="margin-top: 10px;">Выберите длительность:</label>
+            <!-- НОВЫЕ КНОПКИ ДЛИТЕЛЬНОСТИ (без выбора времени) -->
             <div class="duration-grid">
                 <div class="duration-btn" onclick="setDuration(1)">1 час</div>
                 <div class="duration-btn" onclick="setDuration(1.5)">1,5 часа</div>
                 <div class="duration-btn" onclick="setDuration(2)">2 часа</div>
+                <div class="duration-btn" onclick="setDuration(2.5)">2,5 часа</div>
             </div>
 
-            <label class="label">Начало: <span id="display-start">--:--</span></label>
-            <div class="time-grid" id="grid-start"></div>
-
-            <label class="label">Конец: <span id="display-end">--:--</span></label>
-            <div class="time-grid" id="grid-end"></div>
+            <div id="time-display" style="text-align:center; font-weight:700; color:var(--diana-color); margin:15px 0; font-size: 18px;">
+                10:00 — 12:00
+            </div>
             
             <button class="btn primary" id="save-btn" onclick="saveShift()">Сохранить</button>
             <button class="btn" style="margin-top:10px;" onclick="closeModal()">Отмена</button>
@@ -410,6 +395,10 @@
             return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
         }
 
+        // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
+        let draggedElement = null;
+        let draggedShiftId = null;
+
         function renderGrid() {
             const dates = getWeekDates(currentWeekOffset);
             const startStr = dates[0].toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit'});
@@ -433,6 +422,7 @@
                 
                 const col = document.createElement('div');
                 col.className = 'day-column';
+                col.dataset.date = dateStr; // Сохраняем дату колонки для Drag&Drop
                 col.innerHTML = `
                     <div class="day-header ${isToday ? 'today' : ''}">
                         <div class="day-name">${daysRu[index]}</div>
@@ -446,7 +436,9 @@
                 HOURS.forEach(h => {
                     const slot = document.createElement('div');
                     slot.className = 'hour-slot';
-                    slot.onclick = () => openModalWithTime(dateStr, `${h.toString().padStart(2, '0')}:00`);
+                    slot.dataset.time = `${h.toString().padStart(2, '0')}:00`;
+                    // При клике на ПУСТУЮ клетку открываем форму с этим временем
+                    slot.onclick = () => openModalWithTime(dateStr, slot.dataset.time);
                     slotsContainer.appendChild(slot);
                 });
 
@@ -454,6 +446,8 @@
                 shifts.forEach(shift => {
                     const block = document.createElement('div');
                     block.className = `shift-block ${shift.master === 'Диана' ? 'diana' : 'nastya'}`;
+                    block.dataset.id = shift.id;
+                    block.draggable = (shift.master === currentMaster); // Только свои можно таскать
                     
                     const startParts = shift.start.split(':');
                     const endParts = shift.end.split(':');
@@ -471,23 +465,73 @@
                         <div class="shift-time">${shift.start.substring(0,5)}</div>
                     `;
 
-                    let pressTimer;
-                    block.addEventListener('touchstart', (e) => {
-                        pressTimer = setTimeout(() => { openActionModal(shift.id); }, 500); 
-                    }, {passive: true});
-                    block.addEventListener('touchend', () => clearTimeout(pressTimer));
-                    block.addEventListener('touchmove', () => clearTimeout(pressTimer));
-
-                    block.onclick = (e) => { 
-                        e.stopPropagation(); 
-                        if (shift.master === currentMaster) {
-                            editShift(shift.id);
-                        } else {
+                    // Обработка Drag&Drop (для ПК и мобилок)
+                    if (shift.master === currentMaster) {
+                        // Для мыши
+                        block.ondragstart = (e) => {
+                            draggedElement = block;
+                            draggedShiftId = shift.id;
+                            e.dataTransfer.effectAllowed = 'move';
+                            block.classList.add('dragging');
+                        };
+                        block.ondragend = () => {
+                            block.classList.remove('dragging');
+                            draggedElement = null;
+                        };
+                        
+                        // Для тача (долгое нажатие)
+                        let pressTimer;
+                        block.addEventListener('touchstart', (e) => {
+                            pressTimer = setTimeout(() => {
+                                draggedElement = block;
+                                draggedShiftId = shift.id;
+                                block.classList.add('dragging');
+                                if(navigator.vibrate) navigator.vibrate(50); // Легкая вибрация
+                            }, 500);
+                        }, {passive: true});
+                        
+                        block.addEventListener('touchend', () => {
+                            clearTimeout(pressTimer);
+                            if (draggedElement) {
+                                block.classList.remove('dragging');
+                                draggedElement = null;
+                            }
+                        });
+                    } else {
+                        block.onclick = (e) => { 
+                            e.stopPropagation(); 
                             showAlert(`${shift.master} уже работает с ${shift.start} до ${shift.end} (${shift.comment})`);
-                        }
-                    };
-                    
+                        };
+                    }
                     slotsContainer.appendChild(block);
+                });
+
+                // Обработка Drop (сброс перетаскиваемого элемента)
+                col.ondragover = (e) => e.preventDefault(); // Разрешаем сброс
+                col.ondrop = (e) => {
+                    e.preventDefault();
+                    if (draggedShiftId) {
+                        const newDate = col.dataset.date;
+                        // Определяем время по позиции Y
+                        const rect = col.getBoundingClientRect();
+                        const y = e.clientY - rect.top - 33; // Вычитаем высоту заголовка дня
+                        const hour = Math.floor(y / 40) + 8; // 8 утра + часы
+                        moveShift(draggedShiftId, newDate, `${hour.toString().padStart(2, '0')}:00`);
+                    }
+                };
+
+                // Для мобильных Drop
+                col.addEventListener('touchend', (e) => {
+                    if (draggedShiftId) {
+                        const touch = e.changedTouches[0];
+                        const newDate = col.dataset.date;
+                        const rect = col.getBoundingClientRect();
+                        const y = touch.clientY - rect.top - 33;
+                        const hour = Math.floor(y / 40) + 8;
+                        moveShift(draggedShiftId, newDate, `${hour.toString().padStart(2, '0')}:00`);
+                        draggedShiftId = null;
+                        draggedElement = null;
+                    }
                 });
 
                 col.appendChild(slotsContainer);
@@ -498,6 +542,35 @@
             gridContainer.classList.remove('animate-grid');
             void gridContainer.offsetWidth;
             gridContainer.classList.add('animate-grid');
+        }
+
+        // ФУНКЦИЯ ПЕРЕМЕЩЕНИЯ СМЕНЫ
+        async function moveShift(id, newDate, newStartTime) {
+            const shift = shiftsDB.find(s => s.id === id);
+            if (!shift) return;
+            
+            // Вычисляем новое время окончания
+            const startParts = shift.start.split(':');
+            const endParts = shift.end.split(':');
+            const durationMins = (parseInt(endParts[0]) * 60 + parseInt(endParts[1])) - (parseInt(startParts[0]) * 60 + parseInt(startParts[1]));
+            
+            const newStartParts = newStartTime.split(':');
+            const newEndMins = (parseInt(newStartParts[0]) * 60 + parseInt(newStartParts[1])) + durationMins;
+            const newEndH = Math.floor(newEndMins / 60);
+            const newEndM = newEndMins % 60;
+            const newEnd = `${newEndH.toString().padStart(2, '0')}:${newEndM.toString().padStart(2, '0')}`;
+
+            const data = { master: currentMaster, date: newDate, start: newStartTime, end: newEnd, comment: shift.comment };
+            
+            showLoading();
+            try {
+                await fetch(`${API_URL}/shifts/${id}`, { 
+                    method: 'PUT', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify(data) 
+                });
+                loadShifts();
+            } catch (e) { hideLoading(); showAlert("Ошибка перемещения"); }
         }
 
         function changeWeek(dir) { currentWeekOffset += dir; renderGrid(); }
@@ -549,21 +622,25 @@
             }
         }
 
+        // ОБНОВЛЕННЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ БЕЗ СЕТКИ
+        function updateTimeDisplay() {
+            document.getElementById('time-display').innerText = `${selectedStart || '--:--'} — ${selectedEnd || '--:--'}`;
+        }
+
         function openModal() {
             editingShiftId = null;
             document.getElementById('modal-title').innerText = "Новая смена";
             document.getElementById('save-btn').innerText = "Сохранить";
             document.getElementById('input-comment').value = "Педикюр";
-            selectedStart = ""; selectedEnd = "";
+            selectedStart = "10:00"; selectedEnd = "12:00"; // По умолчанию
             document.getElementById('input-date').value = formatDate(new Date());
-            document.getElementById('display-start').innerText = "--:--";
-            document.getElementById('display-end').innerText = "--:--";
             
             document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.duration-btn')[2].classList.add('active'); // По умолчанию 2 часа
             
+            updateTimeDisplay();
             document.getElementById('modal').classList.add('active');
             history.pushState({ page: "edit" }, "");
-            renderTimeGrids();
         }
 
         function openModalWithTime(dateStr, timeStr) {
@@ -573,20 +650,19 @@
             document.getElementById('input-comment').value = "Педикюр";
             
             selectedStart = timeStr;
-            
+            // По умолчанию ставим +2 часа
             const hh = parseInt(timeStr.split(':')[0]);
             const nextHH = (hh + 2).toString().padStart(2, '0');
             selectedEnd = `${nextHH}:00`;
             
             document.getElementById('input-date').value = dateStr;
-            document.getElementById('display-start').innerText = selectedStart;
-            document.getElementById('display-end').innerText = selectedEnd;
             
             document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.duration-btn')[2].classList.add('active'); // Подсвечиваем "2 часа"
             
+            updateTimeDisplay();
             document.getElementById('modal').classList.add('active');
             history.pushState({ page: "edit" }, "");
-            renderTimeGrids();
         }
 
         function editShift(id) {
@@ -598,24 +674,19 @@
             document.getElementById('input-date').value = shift.date;
             document.getElementById('input-comment').value = shift.comment;
             selectedStart = shift.start; selectedEnd = shift.end;
-            document.getElementById('display-start').innerText = selectedStart;
-            document.getElementById('display-end').innerText = selectedEnd;
             
             document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
-            
+            updateTimeDisplay();
             document.getElementById('modal').classList.add('active');
             history.pushState({ page: "edit" }, "");
-            renderTimeGrids();
         }
 
         function closeModal() { document.getElementById('modal').classList.remove('active'); }
 
-        // ОБНОВЛЕННАЯ ФУНКЦИЯ ДЛИТЕЛЬНОСТИ
+        // ОБНОВЛЕННАЯ ФУНКЦИЯ ДЛИТЕЛЬНОСТИ (с 2,5 часами)
         function setDuration(hours) {
-            // Если время начала не выбрано, ставим по умолчанию 10:00
             if (!selectedStart) {
-                selectedStart = "10:00";
-                document.getElementById('display-start').innerText = selectedStart;
+                selectedStart = "10:00"; // Если не выбрано, ставим 10:00
             }
             
             const parts = selectedStart.split(':');
@@ -630,13 +701,11 @@
             }
             
             selectedEnd = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
-            document.getElementById('display-end').innerText = selectedEnd;
             
-            // Подсветка активной кнопки
             document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
             event.currentTarget.classList.add('active');
             
-            renderTimeGrids();
+            updateTimeDisplay();
         }
 
         async function saveShift() {
@@ -693,25 +762,6 @@
             } catch (e) { hideLoading(); showAlert("Ошибка сети"); }
         }
 
-        function renderTimeGrids() {
-            const gs = document.getElementById('grid-start');
-            const ge = document.getElementById('grid-end');
-            gs.innerHTML = ''; ge.innerHTML = '';
-            ALL_TIMES.forEach(t => {
-                const cs = document.createElement('div');
-                cs.className = `time-cell ${t === selectedStart ? 'selected' : ''}`;
-                cs.innerText = t;
-                cs.onclick = () => { selectedStart = t; document.getElementById('display-start').innerText = t; renderTimeGrids(); };
-                gs.appendChild(cs);
-
-                const ce = document.createElement('div');
-                ce.className = `time-cell ${t === selectedEnd ? 'selected' : ''}`;
-                ce.innerText = t;
-                ce.onclick = () => { selectedEnd = t; document.getElementById('display-end').innerText = t; renderTimeGrids(); };
-                ge.appendChild(ce);
-            });
-        }
-
         let touchStartX = 0;
         let touchStartY = 0;
         const swipeThreshold = 50;
@@ -728,7 +778,8 @@
             const diffX = touchEndX - touchStartX;
             const diffY = touchEndY - touchStartY;
 
-            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > swipeThreshold) {
+            // Свайп только если не тащим смену
+            if (!draggedShiftId && Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > swipeThreshold) {
                 if (diffX > 0) changeWeek(-1);
                 else changeWeek(1);
             }
