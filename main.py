@@ -1,76 +1,71 @@
-        // Загрузка данных с сервера
-        async function loadShifts() {
-            try {
-                const response = await fetch(`${API_URL}/shifts`);
-                shiftsDB = await response.json();
-                renderCalendarUI(); // Отдельная функция для отрисовки
-            } catch (e) {
-                console.error("Ошибка загрузки", e);
-            }
-        }
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import sqlite3
+from typing import List, Optional
 
-        function renderCalendar() {
-            loadShifts(); // При смене недели или загрузке просто запрашиваем данные заново
-        }
+app = FastAPI()
 
-        // Отрисовка (бывшая renderCalendar)
-        function renderCalendarUI() {
-            const dates = getWeekDates(currentWeekOffset);
-            const container = document.getElementById('calendar-container');
-            container.innerHTML = '';
-            
-            // ... (оставьте код заголовка недели и перебора дней как было) ...
-            // ВАЖНО: внутри цикла, где выводится карточка смены, поменяйте кнопку удаления:
-            // const delBtnHtml = canDelete ? `<button class="delete-btn" onclick="deleteShift(${shift.id})">🗑️</button>` : '';
-            // Оставьте так же. 
-            // ... (код отрисовки карточек) ...
-        }
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-        async function saveShift() {
-            if (selectedStart >= selectedEnd) {
-                alert("Время окончания должно быть позже начала!");
-                return;
-            }
+DB_FILE = "schedule.db"
 
-            const comment = document.getElementById('input-comment').value;
-            const dates = getWeekDates(currentWeekOffset);
-            const todayStr = formatDate(new Date());
-            const targetDate = dates.find(d => formatDate(d) === todayStr) ? new Date() : dates[0];
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS shifts 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                  master TEXT, date TEXT, start TEXT, end TEXT, comment TEXT)''')
+    conn.commit()
+    conn.close()
 
-            const newShift = {
-                master: currentMaster,
-                date: formatDate(targetDate),
-                start: selectedStart,
-                end: selectedEnd,
-                comment: comment
-            };
+init_db()
 
-            try {
-                const response = await fetch(`${API_URL}/shifts`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(newShift)
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    alert(error.detail); // Покажет ошибку пересечения
-                } else {
-                    closeModal();
-                    loadShifts(); // Перезагружаем данные
-                }
-            } catch (e) {
-                alert("Ошибка соединения с сервером");
-            }
-        }
+class Shift(BaseModel):
+    master: str
+    date: str
+    start: str
+    end: str
+    comment: str
 
-        async function deleteShift(id) {
-            if (confirm("Удалить эту смену?")) {
-                try {
-                    await fetch(`${API_URL}/shifts/${id}`, { method: 'DELETE' });
-                    loadShifts(); // Обновляем данные
-                } catch (e) {
-                    alert("Ошибка удаления");
-                }
-            }
-        }
+@app.get("/shifts")
+def get_shifts():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT id, master, date, start, end, comment FROM shifts")
+    rows = c.fetchall()
+    conn.close()
+    return [{"id": r[0], "master": r[1], "date": r[2], "start": r[3], "end": r[4], "comment": r[5]} for r in rows]
+
+@app.post("/shifts")
+def add_shift(shift: Shift):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    
+    c.execute("SELECT master, start, end FROM shifts WHERE date=? AND ((start < ? AND end > ?) OR (start < ? AND end > ?))", 
+              (shift.date, shift.end, shift.start, shift.end, shift.start))
+    overlap = c.fetchone()
+    
+    if overlap:
+        conn.close()
+        raise HTTPException(status_code=400, detail=f"Пересечение! {overlap[0]} уже работает с {overlap[1]} до {overlap[2]}")
+
+    c.execute("INSERT INTO shifts (master, date, start, end, comment) VALUES (?,?,?,?,?)",
+              (shift.master, shift.date, shift.start, shift.end, shift.comment))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+@app.delete("/shifts/{shift_id}")
+def delete_shift(shift_id: int):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("DELETE FROM shifts WHERE id=?", (shift_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
