@@ -1,0 +1,15 @@
+{
+  "name": "График мастеров",
+  "short_name": "График",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#FFF0F5",
+  "theme_color": "#FFF0F5",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
