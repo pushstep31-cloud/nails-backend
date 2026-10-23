@@ -99,7 +99,7 @@
 </head>
 <body>
 
-    <!-- ЭКРАН ЗАГРУЗКИ (теперь без hidden, он виден сразу) -->
+    <!-- ЭКРАН ЗАГРУЗКИ -->
     <div id="loading-screen" class="loading-screen">
         <div class="spinner"></div>
         <div class="loading-text">Обновление данных...<br><span style="font-size:12px; font-weight:400; color:#777;">Пожалуйста, подождите</span></div>
@@ -114,13 +114,10 @@
         </div>
     </div>
 
-    <!-- ЭКРАН ВХОДА -->
     <div id="auth-screen" class="auth-screen hidden">
         <h1>💅 График</h1>
         <p style="text-align: center; color: #777; margin-bottom: 10px;">Кто вы?</p>
-        <div id="login-users-container" style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <!-- Кнопки с именами будут добавлены через JS -->
-        </div>
+        <div id="login-users-container" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
         
         <div class="input-group">
             <input type="password" id="password" placeholder="Пароль">
@@ -128,7 +125,6 @@
         </div>
     </div>
 
-    <!-- ОСНОВНОЙ ЭКРАН -->
     <div id="main-screen" class="hidden">
         <h1 id="greeting">💅 График</h1>
         
@@ -145,7 +141,6 @@
         <button class="fab" onclick="openModal()">+</button>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО СМЕНЫ -->
     <div class="modal-overlay" id="modal">
         <div class="modal">
             <h2 id="modal-title">Новая смена</h2>
@@ -167,7 +162,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО НАСТРОЕК -->
     <div class="modal-overlay" id="settings-modal">
         <div class="modal">
             <h2>Настройки профиля</h2>
@@ -184,6 +178,14 @@
     </div>
 
     <script>
+        // ПЕРЕХВАТ ОШИБОК, ЧТОБЫ НЕ БЫЛО БЕЛОГО ЭКРАНА
+        window.onerror = function(msg, url, line) {
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            alert("Произошла ошибка при загрузке. Пожалуйста, обновите страницу.\n\nДетали: " + msg);
+            return false;
+        };
+
         const API_URL = "https://nailscalendar.onrender.com"; 
         
         let currentMaster = null;
@@ -526,9 +528,8 @@
 
         // --- ЗАПУСК ---
         window.onload = async function() {
-            showLoading(); // Показываем экран загрузки при старте
+            showLoading(); 
             
-            // Загружаем имена пользователей
             await loadUsers(); 
             
             const savedMaster = localStorage.getItem('nailsMaster');
@@ -537,9 +538,8 @@
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-screen').classList.remove('hidden');
                 document.getElementById('greeting').innerText = `💅 Привет, ${currentMaster}`;
-                loadShifts(); // Это скроет экран загрузки, когда смены загрузятся
+                loadShifts(); 
             } else {
-                // Если не авторизован, показываем экран входа и скрываем загрузку
                 document.getElementById('auth-screen').classList.remove('hidden');
                 hideLoading();
             }
