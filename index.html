@@ -63,7 +63,6 @@
         .day-header.today { background: var(--diana-bg); }
         .day-header.today .day-name { color: var(--diana-color); }
 
-        /* Клетки часов (теперь кликабельные) */
         .hour-slot { height: var(--hour-height); border-bottom: 1px solid #F0F0F0; cursor: pointer; transition: background 0.2s; }
         .hour-slot:hover { background: #F8F9FA; }
         .hour-slot:active { background: #E3F2FD; }
@@ -182,7 +181,46 @@
     </div>
 
     <script>
+        // Защита от белого экрана при ошибках
         window.onerror = function(msg) { alert("Ошибка: " + msg); return false; };
+
+        // --- ЗАЩИТА ОТ СЛУЧАЙНОГО ВЫХОДА (Кнопка Назад) ---
+        let backPressCount = 0;
+        let backPressTimer = null;
+
+        history.pushState({ page: "main" }, "");
+
+        window.addEventListener('popstate', function (e) {
+            const modal = document.getElementById('modal');
+            const settingsModal = document.getElementById('settings-modal');
+            
+            // Если открыто окно - закрываем его
+            if (modal.classList.contains('active')) {
+                closeModal();
+                history.pushState({ page: "main" }, "");
+                return;
+            }
+            if (settingsModal.classList.contains('active')) {
+                closeSettingsModal();
+                history.pushState({ page: "main" }, "");
+                return;
+            }
+
+            // Логика двойного нажатия
+            if (backPressCount === 0) {
+                backPressCount++;
+                history.pushState({ page: "main" }, ""); 
+                showAlert("Нажмите 'Назад' еще раз, чтобы выйти из приложения.");
+                
+                backPressTimer = setTimeout(() => {
+                    backPressCount = 0;
+                }, 2000); 
+            } else {
+                clearTimeout(backPressTimer);
+                history.back();
+            }
+        });
+
         const API_URL = "https://nailscalendar.onrender.com"; 
         
         let currentMaster = null;
@@ -300,11 +338,9 @@
                 const slotsContainer = document.createElement('div');
                 slotsContainer.style.position = 'relative';
                 
-                // Создаем кликабельные слоты по часам
                 HOURS.forEach(h => {
                     const slot = document.createElement('div');
                     slot.className = 'hour-slot';
-                    // При клике на пустую клетку открываем модалку с подставленным временем
                     slot.onclick = () => openModalWithTime(dateStr, `${h.toString().padStart(2, '0')}:00`);
                     slotsContainer.appendChild(slot);
                 });
@@ -345,7 +381,6 @@
 
         function changeWeek(dir) { currentWeekOffset += dir; renderGrid(); }
 
-        // Открытие модалки по кнопке "+" (пустое время)
         function openModal() {
             editingShiftId = null;
             document.getElementById('modal-title').innerText = "Новая смена";
@@ -363,7 +398,6 @@
             renderTimeGrids();
         }
 
-        // Открытие модалки при клике на сетку (с подставленным временем)
         function openModalWithTime(dateStr, timeStr) {
             editingShiftId = null;
             document.getElementById('modal-title').innerText = "Новая смена";
@@ -371,7 +405,6 @@
             document.getElementById('input-comment').value = "Педикюр";
             
             selectedStart = timeStr;
-            // По умолчанию ставим конец на 1 час позже
             const hh = parseInt(timeStr.split(':')[0]);
             const nextHH = (hh + 1).toString().padStart(2, '0');
             selectedEnd = `${nextHH}:00`;
