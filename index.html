@@ -248,16 +248,16 @@
             <label class="label">Услуга</label>
             <input type="text" id="input-comment" value="Педикюр">
             
-            <label class="label">Начало: <span id="display-start">--:--</span></label>
-            <div class="time-grid" id="grid-start"></div>
-            
-            <!-- НОВЫЙ БЛОК С ДЛИТЕЛЬНОСТЬЮ -->
+            <!-- ПЕРЕМЕЩЕННЫЙ БЛОК ДЛИТЕЛЬНОСТИ -->
             <label class="label">Длительность</label>
             <div class="duration-grid">
                 <div class="duration-btn" onclick="setDuration(1)">1 час</div>
                 <div class="duration-btn" onclick="setDuration(1.5)">1,5 часа</div>
                 <div class="duration-btn" onclick="setDuration(2)">2 часа</div>
             </div>
+
+            <label class="label">Начало: <span id="display-start">--:--</span></label>
+            <div class="time-grid" id="grid-start"></div>
 
             <label class="label">Конец: <span id="display-end">--:--</span></label>
             <div class="time-grid" id="grid-end"></div>
@@ -559,7 +559,6 @@
             document.getElementById('display-start').innerText = "--:--";
             document.getElementById('display-end').innerText = "--:--";
             
-            // Сбрасываем активные кнопки длительности
             document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
             
             document.getElementById('modal').classList.add('active');
@@ -583,7 +582,6 @@
             document.getElementById('display-start').innerText = selectedStart;
             document.getElementById('display-end').innerText = selectedEnd;
             
-            // Сбрасываем кнопки при открытии
             document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
             
             document.getElementById('modal').classList.add('active');
@@ -603,7 +601,6 @@
             document.getElementById('display-start').innerText = selectedStart;
             document.getElementById('display-end').innerText = selectedEnd;
             
-            // Сбрасываем кнопки
             document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
             
             document.getElementById('modal').classList.add('active');
@@ -613,10 +610,12 @@
 
         function closeModal() { document.getElementById('modal').classList.remove('active'); }
 
-        // ФУНКЦИЯ УСТАНОВКИ ДЛИТЕЛЬНОСТИ
+        // ОБНОВЛЕННАЯ ФУНКЦИЯ ДЛИТЕЛЬНОСТИ
         function setDuration(hours) {
+            // Если время начала не выбрано, ставим по умолчанию 10:00
             if (!selectedStart) {
-                return showAlert("Сначала выберите время начала!");
+                selectedStart = "10:00";
+                document.getElementById('display-start').innerText = selectedStart;
             }
             
             const parts = selectedStart.split(':');
