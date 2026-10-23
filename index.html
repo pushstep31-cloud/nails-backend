@@ -23,7 +23,7 @@
             --nastya-bg: #FFEBEE;
             
             --hour-height: 40px; 
-            --nav-text-color: #888888; /* Единый цвет для текста в меню */
+            --nav-text-color: #888888;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -91,21 +91,19 @@
         
         .nav-item { 
             display: flex; flex-direction: column; align-items: center; 
-            color: var(--nav-text-color); /* Одинаковый цвет */
+            color: var(--nav-text-color); 
             font-size: 10px; font-weight: 600; cursor: pointer; 
             transition: transform 0.2s, color 0.2s; 
             width: 60px; padding: 10px 0; 
         }
         .nav-item:active { transform: scale(0.85); } 
         
-        /* Минималистичные SVG иконки */
         .nav-icon { 
             width: 22px; height: 22px; margin-bottom: 4px; 
             fill: none; stroke: currentColor; stroke-width: 2; 
             stroke-linecap: round; stroke-linejoin: round;
         }
         
-        /* Кнопка + */
         .nav-add-btn { 
             background: linear-gradient(135deg, #42A5F5, #1E88E5); 
             color: white; width: 56px; height: 56px; border-radius: 50%; 
@@ -180,10 +178,8 @@
             <div class="days-wrapper" id="days-wrapper"></div>
         </div>
 
-        <!-- НОВОЕ НИЖНЕЕ МЕНЮ С МИНИМАЛИСТИЧНЫМИ ИКОНКАМИ -->
         <div class="bottom-nav">
             <div class="nav-item" onclick="resetToToday()">
-                <!-- SVG Иконка календаря (минимализм) -->
                 <svg class="nav-icon" viewBox="0 0 24 24">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                     <line x1="16" y1="2" x2="16" y2="6"></line>
@@ -198,7 +194,6 @@
             </div>
             
             <div class="nav-item" onclick="openSettingsModal()">
-                <!-- SVG Иконка настроек (минимализм) -->
                 <svg class="nav-icon" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="3"></circle>
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -208,6 +203,7 @@
         </div>
     </div>
 
+    <!-- ОКНО ДЛЯ СВОЕЙ СМЕНЫ -->
     <div class="modal-overlay" id="action-modal">
         <div class="modal action-modal">
             <div class="close-cross" onclick="closeActionModal()">✕</div>
@@ -449,8 +445,13 @@
 
                     block.onclick = (e) => { 
                         e.stopPropagation(); 
-                        if (shift.master === currentMaster) editShift(shift.id);
-                        else openActionModal(shift.id);
+                        // Если это СВОЯ смена - открываем редактирование
+                        // Если ЧУЖАЯ - показываем уведомление о занятости
+                        if (shift.master === currentMaster) {
+                            editShift(shift.id);
+                        } else {
+                            showAlert(`${shift.master} уже работает с ${shift.start} до ${shift.end} (${shift.comment})`);
+                        }
                     };
                     
                     slotsContainer.appendChild(block);
