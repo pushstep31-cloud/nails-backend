@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>График мастеров</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💅</text></svg>">
+    
+    <!-- Подключаем иконку и манифест для установки как приложение -->
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="manifest" href="manifest.json">
+    
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -173,6 +178,7 @@
     </div>
 
     <script>
+        // Ссылка на ваш сервер Render
         const API_URL = "https://nailscalendar.onrender.com"; 
         
         const PASSWORDS = { "Диана": "1111", "Настя": "2222" };
@@ -206,7 +212,7 @@
                 document.getElementById('main-screen').classList.remove('hidden');
                 document.getElementById('greeting').innerText = `💅 Привет, ${currentMaster}`;
                 
-                showLoading(); // Показываем загрузку при авто-входе
+                showLoading(); 
                 loadShifts();
             }
         };
@@ -227,7 +233,7 @@
                 document.getElementById('main-screen').classList.remove('hidden');
                 document.getElementById('greeting').innerText = `💅 Привет, ${currentMaster}`;
                 
-                showLoading(); // Показываем загрузку при входе
+                showLoading(); 
                 loadShifts(); 
             } else {
                 alert("Выберите имя или неверный пароль!");
@@ -246,10 +252,10 @@
                 if (!response.ok) throw new Error("Ошибка сервера");
                 shiftsDB = await response.json();
                 renderCalendar(); 
-                hideLoading(); // Прячем загрузку, когда данные пришли
+                hideLoading(); 
             } catch (e) {
                 console.error(e);
-                hideLoading(); // Прячем загрузку даже при ошибке
+                hideLoading(); 
                 alert("Не удалось загрузить данные. Сервер просыпается, подождите 30 секунд и обновите страницу.");
             }
         }
@@ -276,7 +282,7 @@
                 comment: comment
             };
 
-            showLoading(); // Показываем загрузку при сохранении
+            showLoading(); 
             try {
                 const response = await fetch(`${API_URL}/shifts`, {
                     method: 'POST',
@@ -300,7 +306,7 @@
 
         async function deleteShift(id) {
             if (confirm("Удалить эту смену?")) {
-                showLoading(); // Показываем загрузку при удалении
+                showLoading(); 
                 try {
                     await fetch(`${API_URL}/shifts/${id}`, { method: 'DELETE' });
                     loadShifts(); 
