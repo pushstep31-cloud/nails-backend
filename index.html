@@ -43,10 +43,12 @@
 
         .hidden { display: none !important; }
 
+        /* ШАПКА КАЛЕНДАРЯ */
         .calendar-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--card-bg); box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 10; }
         .week-nav { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-main); }
         .week-range { font-weight: 700; font-size: 16px; }
 
+        /* СЕТКА */
         .grid-container { display: flex; background: var(--card-bg); margin: 5px; border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; touch-action: pan-y; }
         .animate-grid { animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
@@ -74,17 +76,34 @@
         .shift-title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .shift-time { font-size: 7px; font-weight: 600; }
 
+        /* НИЖНЕЕ МЕНЮ */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--card-bg); display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 100; }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #999; font-size: 10px; cursor: pointer; }
         .nav-item.active { color: var(--diana-color); }
         .nav-icon { font-size: 20px; margin-bottom: 2px; }
         .nav-add-btn { background: var(--diana-color); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; margin-top: -20px; box-shadow: 0 4px 10px rgba(33, 150, 243, 0.4); }
 
+        /* МОДАЛЬНЫЕ ОКНА */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal { background: var(--card-bg); width: 100%; max-width: 500px; border-radius: 20px 20px 0 0; padding: 24px; transform: translateY(100%); transition: transform 0.3s ease; max-height: 90vh; overflow-y: auto; }
+        
+        .modal { 
+            background: var(--card-bg); width: 100%; max-width: 500px; 
+            border-radius: 20px 20px 0 0; padding: 24px; 
+            transform: translateY(100%); transition: transform 0.3s ease; 
+            max-height: 90vh; overflow-y: auto; position: relative;
+        }
         .modal-overlay.active .modal { transform: translateY(0); }
-        .modal h2 { font-size: 20px; margin-bottom: 15px; text-align: center; }
+        
+        /* Стиль для крестика */
+        .close-cross {
+            position: absolute; top: 15px; right: 15px;
+            font-size: 24px; color: #999; cursor: pointer;
+            line-height: 1; padding: 5px;
+        }
+        .close-cross:active { color: #333; }
+
+        .modal h2 { font-size: 20px; margin-bottom: 15px; text-align: center; padding: 0 20px; }
 
         .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
         .time-cell { background: #F0F0F0; padding: 10px 0; text-align: center; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
@@ -154,6 +173,7 @@
 
     <div class="modal-overlay" id="action-modal">
         <div class="modal action-modal">
+            <div class="close-cross" onclick="closeActionModal()">✕</div>
             <h2 id="action-title">Смена</h2>
             <div class="action-info" id="action-info"></div>
             <button class="btn primary" onclick="actionEdit()">✏️ Редактировать</button>
@@ -164,6 +184,7 @@
 
     <div class="modal-overlay" id="modal">
         <div class="modal">
+            <div class="close-cross" onclick="closeModal()">✕</div>
             <h2 id="modal-title">Смена</h2>
             <label class="label">Дата</label>
             <input type="date" id="input-date">
@@ -180,6 +201,7 @@
 
     <div class="modal-overlay" id="settings-modal">
         <div class="modal">
+            <div class="close-cross" onclick="closeSettingsModal()">✕</div>
             <h2>Настройки</h2>
             <label class="label">Новое имя</label>
             <input type="text" id="settings-name">
@@ -453,7 +475,6 @@
             renderTimeGrids();
         }
 
-        // ИМЕННО ЗДЕСЬ ДОБАВЛЯЮТСЯ 2 ЧАСА
         function openModalWithTime(dateStr, timeStr) {
             editingShiftId = null;
             document.getElementById('modal-title').innerText = "Новая смена";
