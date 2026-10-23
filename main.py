@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sqlite3
-from typing import List, Optional
 
 app = FastAPI()
 
@@ -46,7 +45,6 @@ def get_shifts():
 def add_shift(shift: Shift):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    
     c.execute("SELECT master, start, end FROM shifts WHERE date=? AND ((start < ? AND end > ?) OR (start < ? AND end > ?))", 
               (shift.date, shift.end, shift.start, shift.end, shift.start))
     overlap = c.fetchone()
@@ -57,6 +55,33 @@ def add_shift(shift: Shift):
 
     c.execute("INSERT INTO shifts (master, date, start, end, comment) VALUES (?,?,?,?,?)",
               (shift.master, shift.date, shift.start, shift.end, shift.comment))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+# НОВАЯ ФУНКЦИЯ: Обновление смены
+@app.put("/shifts/{shift_id}")
+def update_shift(shift_id: int, shift: Shift):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    
+    # Проверяем, существует ли такая смена
+    c.execute("SELECT id FROM shifts WHERE id=?", (shift_id,))
+    if not c.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Смена не найдена")
+        
+    # Проверяем пересечения (исключая саму себя)
+    c.execute("SELECT master, start, end FROM shifts WHERE date=? AND id!=? AND ((start < ? AND end > ?) OR (start < ? AND end > ?))", 
+              (shift.date, shift_id, shift.end, shift.start, shift.end, shift.start))
+    overlap = c.fetchone()
+    
+    if overlap:
+        conn.close()
+        raise HTTPException(status_code=400, detail=f"Пересечение! {overlap[0]} уже работает с {overlap[1]} до {overlap[2]}")
+
+    c.execute("UPDATE shifts SET date=?, start=?, end=?, comment=? WHERE id=?",
+              (shift.date, shift.start, shift.end, shift.comment, shift_id))
     conn.commit()
     conn.close()
     return {"status": "ok"}
