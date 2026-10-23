@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>График мастеров</title>
     
+    <!-- Подключение манифеста и иконок для PWA -->
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
-    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#F8F9FA"/>
     
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -71,7 +73,6 @@
         .hour-slot { height: var(--hour-height); border-bottom: 1px solid #F0F0F0; cursor: pointer; transition: background 0.2s; }
         .hour-slot:active { background: #E3F2FD; }
 
-        /* БЛОК СМЕНЫ (с поддержкой перетаскивания) */
         .shift-block { 
             position: absolute; left: 1px; right: 1px; border-radius: 4px; padding: 2px; 
             font-size: 7px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
@@ -235,7 +236,6 @@
             <input type="text" id="input-comment" value="Педикюр">
             
             <label class="label" style="margin-top: 10px;">Выберите длительность:</label>
-            <!-- НОВЫЕ КНОПКИ ДЛИТЕЛЬНОСТИ (без выбора времени) -->
             <div class="duration-grid">
                 <div class="duration-btn" onclick="setDuration(1)">1 час</div>
                 <div class="duration-btn" onclick="setDuration(1.5)">1,5 часа</div>
@@ -268,6 +268,17 @@
 
     <script>
         window.onerror = function(msg) { alert("Ошибка: " + msg); return false; };
+
+        // РЕГИСТРАЦИЯ SERVICE WORKER ДЛЯ УСТАНОВКИ
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(registration => {
+                    console.log('SW registered');
+                }).catch(registrationError => {
+                    console.log('SW registration failed: ', registrationError);
+                });
+            });
+        }
 
         let backPressCount = 0;
         let backPressTimer = null;
@@ -422,7 +433,7 @@
                 
                 const col = document.createElement('div');
                 col.className = 'day-column';
-                col.dataset.date = dateStr; // Сохраняем дату колонки для Drag&Drop
+                col.dataset.date = dateStr; 
                 col.innerHTML = `
                     <div class="day-header ${isToday ? 'today' : ''}">
                         <div class="day-name">${daysRu[index]}</div>
@@ -437,7 +448,6 @@
                     const slot = document.createElement('div');
                     slot.className = 'hour-slot';
                     slot.dataset.time = `${h.toString().padStart(2, '0')}:00`;
-                    // При клике на ПУСТУЮ клетку открываем форму с этим временем
                     slot.onclick = () => openModalWithTime(dateStr, slot.dataset.time);
                     slotsContainer.appendChild(slot);
                 });
@@ -447,7 +457,7 @@
                     const block = document.createElement('div');
                     block.className = `shift-block ${shift.master === 'Диана' ? 'diana' : 'nastya'}`;
                     block.dataset.id = shift.id;
-                    block.draggable = (shift.master === currentMaster); // Только свои можно таскать
+                    block.draggable = (shift.master === currentMaster);
                     
                     const startParts = shift.start.split(':');
                     const endParts = shift.end.split(':');
@@ -465,9 +475,7 @@
                         <div class="shift-time">${shift.start.substring(0,5)}</div>
                     `;
 
-                    // Обработка Drag&Drop (для ПК и мобилок)
                     if (shift.master === currentMaster) {
-                        // Для мыши
                         block.ondragstart = (e) => {
                             draggedElement = block;
                             draggedShiftId = shift.id;
@@ -479,14 +487,13 @@
                             draggedElement = null;
                         };
                         
-                        // Для тача (долгое нажатие)
                         let pressTimer;
                         block.addEventListener('touchstart', (e) => {
                             pressTimer = setTimeout(() => {
                                 draggedElement = block;
                                 draggedShiftId = shift.id;
                                 block.classList.add('dragging');
-                                if(navigator.vibrate) navigator.vibrate(50); // Легкая вибрация
+                                if(navigator.vibrate) navigator.vibrate(50);
                             }, 500);
                         }, {passive: true});
                         
@@ -506,21 +513,18 @@
                     slotsContainer.appendChild(block);
                 });
 
-                // Обработка Drop (сброс перетаскиваемого элемента)
-                col.ondragover = (e) => e.preventDefault(); // Разрешаем сброс
+                col.ondragover = (e) => e.preventDefault(); 
                 col.ondrop = (e) => {
                     e.preventDefault();
                     if (draggedShiftId) {
                         const newDate = col.dataset.date;
-                        // Определяем время по позиции Y
                         const rect = col.getBoundingClientRect();
-                        const y = e.clientY - rect.top - 33; // Вычитаем высоту заголовка дня
-                        const hour = Math.floor(y / 40) + 8; // 8 утра + часы
+                        const y = e.clientY - rect.top - 33; 
+                        const hour = Math.floor(y / 40) + 8; 
                         moveShift(draggedShiftId, newDate, `${hour.toString().padStart(2, '0')}:00`);
                     }
                 };
 
-                // Для мобильных Drop
                 col.addEventListener('touchend', (e) => {
                     if (draggedShiftId) {
                         const touch = e.changedTouches[0];
@@ -544,12 +548,10 @@
             gridContainer.classList.add('animate-grid');
         }
 
-        // ФУНКЦИЯ ПЕРЕМЕЩЕНИЯ СМЕНЫ
         async function moveShift(id, newDate, newStartTime) {
             const shift = shiftsDB.find(s => s.id === id);
             if (!shift) return;
             
-            // Вычисляем новое время окончания
             const startParts = shift.start.split(':');
             const endParts = shift.end.split(':');
             const durationMins = (parseInt(endParts[0]) * 60 + parseInt(endParts[1])) - (parseInt(startParts[0]) * 60 + parseInt(startParts[1]));
@@ -622,7 +624,6 @@
             }
         }
 
-        // ОБНОВЛЕННЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ БЕЗ СЕТКИ
         function updateTimeDisplay() {
             document.getElementById('time-display').innerText = `${selectedStart || '--:--'} — ${selectedEnd || '--:--'}`;
         }
@@ -632,11 +633,11 @@
             document.getElementById('modal-title').innerText = "Новая смена";
             document.getElementById('save-btn').innerText = "Сохранить";
             document.getElementById('input-comment').value = "Педикюр";
-            selectedStart = "10:00"; selectedEnd = "12:00"; // По умолчанию
+            selectedStart = "10:00"; selectedEnd = "12:00"; 
             document.getElementById('input-date').value = formatDate(new Date());
             
             document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.duration-btn')[2].classList.add('active'); // По умолчанию 2 часа
+            document.querySelectorAll('.duration-btn')[2].classList.add('active'); 
             
             updateTimeDisplay();
             document.getElementById('modal').classList.add('active');
@@ -650,7 +651,6 @@
             document.getElementById('input-comment').value = "Педикюр";
             
             selectedStart = timeStr;
-            // По умолчанию ставим +2 часа
             const hh = parseInt(timeStr.split(':')[0]);
             const nextHH = (hh + 2).toString().padStart(2, '0');
             selectedEnd = `${nextHH}:00`;
@@ -658,7 +658,7 @@
             document.getElementById('input-date').value = dateStr;
             
             document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.duration-btn')[2].classList.add('active'); // Подсвечиваем "2 часа"
+            document.querySelectorAll('.duration-btn')[2].classList.add('active'); 
             
             updateTimeDisplay();
             document.getElementById('modal').classList.add('active');
@@ -683,10 +683,9 @@
 
         function closeModal() { document.getElementById('modal').classList.remove('active'); }
 
-        // ОБНОВЛЕННАЯ ФУНКЦИЯ ДЛИТЕЛЬНОСТИ (с 2,5 часами)
         function setDuration(hours) {
             if (!selectedStart) {
-                selectedStart = "10:00"; // Если не выбрано, ставим 10:00
+                selectedStart = "10:00";
             }
             
             const parts = selectedStart.split(':');
@@ -778,7 +777,6 @@
             const diffX = touchEndX - touchStartX;
             const diffY = touchEndY - touchStartY;
 
-            // Свайп только если не тащим смену
             if (!draggedShiftId && Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > swipeThreshold) {
                 if (diffX > 0) changeWeek(-1);
                 else changeWeek(1);
