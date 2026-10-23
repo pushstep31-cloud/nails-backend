@@ -72,14 +72,29 @@
         .hour-slot { height: var(--hour-height); border-bottom: 1px solid #F0F0F0; cursor: pointer; transition: background 0.2s; }
         .hour-slot:active { background: #E3F2FD; }
 
+        /* БЛОК СМЕНЫ С ПЛАВНОЙ АНИМАЦИЕЙ */
         .shift-block { 
             position: absolute; left: 1px; right: 1px; border-radius: 4px; padding: 2px; 
             font-size: 7px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
             cursor: grab; z-index: 2; display: flex; flex-direction: column;
-            transition: transform 0.1s, box-shadow 0.1s, opacity 0.2s;
+            /* Плавные переходы для всех свойств */
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                        box-shadow 0.2s ease, 
+                        opacity 0.2s ease;
         }
-        .shift-block:active { cursor: grabbing; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transform: scale(1.05); z-index: 10; }
-        .shift-block.dragging { opacity: 0.5; transform: scale(0.95); }
+        /* Состояние при захвате пальцем/мышью */
+        .shift-block:active { 
+            cursor: grabbing; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25); 
+            transform: scale(1.1); 
+            z-index: 100; 
+        }
+        /* Состояние, когда элемент перетаскивают */
+        .shift-block.dragging { 
+            opacity: 0.4; 
+            transform: scale(0.95); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
         
         .shift-block.diana { background: var(--diana-bg); border-left: 2px solid var(--diana-color); color: var(--diana-color); }
         .shift-block.nastya { background: var(--nastya-bg); border-left: 2px solid var(--nastya-color); color: var(--nastya-color); }
@@ -404,7 +419,7 @@
             return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
         }
 
-        // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ БЕЗ ЗАГРУЗКИ ---
+        // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (С ПЛАВНОЙ АНИМАЦИЕЙ) ---
         let draggedElement = null;
         let draggedShiftId = null;
 
@@ -478,7 +493,8 @@
                             draggedElement = block;
                             draggedShiftId = shift.id;
                             e.dataTransfer.effectAllowed = 'move';
-                            block.classList.add('dragging');
+                            // Небольшая задержка для анимации
+                            setTimeout(() => block.classList.add('dragging'), 0);
                         };
                         block.ondragend = () => {
                             block.classList.remove('dragging');
@@ -546,7 +562,6 @@
             gridContainer.classList.add('animate-grid');
         }
 
-        // ОБНОВЛЕННАЯ ФУНКЦИЯ (БЕЗ ЭКРАНА ЗАГРУЗКИ)
         async function moveShift(id, newDate, newStartTime) {
             const shift = shiftsDB.find(s => s.id === id);
             if (!shift) return;
@@ -563,7 +578,6 @@
 
             const data = { master: currentMaster, date: newDate, start: newStartTime, end: newEnd, comment: shift.comment };
             
-            // Отправляем на сервер в фоне (без showLoading)
             try {
                 const res = await fetch(`${API_URL}/shifts/${id}`, { 
                     method: 'PUT', 
@@ -574,9 +588,8 @@
                 if (!res.ok) {
                     const err = await res.json(); 
                     showAlert(err.detail);
-                    loadShifts(); // Если ошибка (пересечение), возвращаем как было
+                    renderGrid(); // Возвращаем как было
                 } else {
-                    // Если успешно, обновляем локальную базу и перерисовываем без запроса к серверу
                     shift.date = newDate;
                     shift.start = newStartTime;
                     shift.end = newEnd;
@@ -584,7 +597,7 @@
                 }
             } catch (e) { 
                 showAlert("Ошибка перемещения"); 
-                loadShifts(); 
+                renderGrid(); 
             }
         }
 
