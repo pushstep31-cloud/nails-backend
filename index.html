@@ -51,6 +51,15 @@
         /* СЕТКА */
         .grid-container { display: flex; background: var(--card-bg); margin: 5px; border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; touch-action: pan-y; }
         
+        /* Анимация для сетки */
+        .animate-grid {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
         .time-column { width: 36px; min-width: 36px; background: #FAFAFA; border-right: 1px solid #EEE; }
         .time-label { height: var(--hour-height); font-size: 9px; color: #999; text-align: right; padding-right: 3px; padding-top: 6px; border-bottom: 1px dashed #EEE; }
         
@@ -64,6 +73,7 @@
         .day-header.today { background: var(--diana-bg); }
         .day-header.today .day-name { color: var(--diana-color); }
 
+        /* Клетки часов */
         .hour-slot { height: var(--hour-height); border-bottom: 1px solid #F0F0F0; cursor: pointer; transition: background 0.2s; }
         .hour-slot:hover { background: #F8F9FA; }
         .hour-slot:active { background: #E3F2FD; }
@@ -94,7 +104,6 @@
         .time-cell.selected { background: var(--diana-bg); color: var(--diana-color); box-shadow: inset 0 0 0 2px var(--diana-color); }
         .label { font-weight: 600; margin-bottom: 5px; display: block; font-size: 13px; }
         
-        /* ОКНО ДЕЙСТВИЙ */
         .action-modal { text-align: center; }
         .action-info { font-size: 16px; font-weight: 600; margin-bottom: 20px; color: #555; }
         
@@ -156,7 +165,6 @@
         </div>
     </div>
 
-    <!-- ОКНО ДЕЙСТВИЙ СМЕНЫ -->
     <div class="modal-overlay" id="action-modal">
         <div class="modal action-modal">
             <h2 id="action-title">Смена</h2>
@@ -167,7 +175,6 @@
         </div>
     </div>
 
-    <!-- ОКНО РЕДАКТИРОВАНИЯ -->
     <div class="modal-overlay" id="modal">
         <div class="modal">
             <h2 id="modal-title">Смена</h2>
@@ -234,7 +241,7 @@
         let selectedEnd = "";
         let shiftsDB = []; 
         let editingShiftId = null; 
-        let activeShiftId = null; // Для окна действий
+        let activeShiftId = null;
 
         const HOURS = [];
         for (let h = 8; h <= 23; h++) HOURS.push(h);
@@ -347,6 +354,7 @@
                 HOURS.forEach(h => {
                     const slot = document.createElement('div');
                     slot.className = 'hour-slot';
+                    // Передаем точный час, на который нажали
                     slot.onclick = () => openModalWithTime(dateStr, `${h.toString().padStart(2, '0')}:00`);
                     slotsContainer.appendChild(slot);
                 });
@@ -372,22 +380,13 @@
                         <div class="shift-time">${shift.start.substring(0,5)}</div>
                     `;
 
-                    // Логика долгого нажатия
                     let pressTimer;
                     block.addEventListener('touchstart', (e) => {
-                        pressTimer = setTimeout(() => {
-                            openActionModal(shift.id);
-                        }, 500); // 500 мс для долгого нажатия
+                        pressTimer = setTimeout(() => { openActionModal(shift.id); }, 500); 
                     }, {passive: true});
-                    
-                    block.addEventListener('touchend', (e) => {
-                        clearTimeout(pressTimer);
-                    });
-                    block.addEventListener('touchmove', (e) => {
-                        clearTimeout(pressTimer); // Отменяем, если начали скроллить
-                    });
+                    block.addEventListener('touchend', () => clearTimeout(pressTimer));
+                    block.addEventListener('touchmove', () => clearTimeout(pressTimer));
 
-                    // Обычный клик (для ПК или быстрого доступа)
                     block.onclick = (e) => { 
                         e.stopPropagation(); 
                         if (shift.master === currentMaster) editShift(shift.id);
@@ -400,6 +399,12 @@
                 col.appendChild(slotsContainer);
                 daysWrapper.appendChild(col);
             });
+
+            // Добавляем класс анимации после рендера
+            const gridContainer = document.getElementById('grid-container');
+            gridContainer.classList.remove('animate-grid');
+            void gridContainer.offsetWidth; // Триггер рефлоу для перезапуска анимации
+            gridContainer.classList.add('animate-grid');
         }
 
         function changeWeek(dir) { currentWeekOffset += dir; renderGrid(); }
@@ -413,20 +418,15 @@
             }
         }
 
-        // --- ОКНО ДЕЙСТВИЙ ---
         function openActionModal(id) {
             const shift = shiftsDB.find(s => s.id === id);
             if (!shift) return;
             activeShiftId = id;
 
             document.getElementById('action-info').innerText = `${shift.start} — ${shift.end} (${shift.comment})`;
-            
             const delBtn = document.getElementById('action-delete-btn');
-            if (shift.master === currentMaster) {
-                delBtn.style.display = 'block';
-            } else {
-                delBtn.style.display = 'none';
-            }
+            if (shift.master === currentMaster) delBtn.style.display = 'block';
+            else delBtn.style.display = 'none';
 
             document.getElementById('action-modal').classList.add('active');
             history.pushState({ page: "action" }, "");
@@ -456,32 +456,31 @@
             }
         }
 
-        // --- РЕДАКТИРОВАНИЕ ---
         function openModal() {
             editingShiftId = null;
             document.getElementById('modal-title').innerText = "Новая смена";
             document.getElementById('save-btn').innerText = "Сохранить";
             document.getElementById('input-comment').value = "Педикюр";
-            
-            selectedStart = "";
-            selectedEnd = "";
-            
+            selectedStart = ""; selectedEnd = "";
             document.getElementById('input-date').value = formatDate(new Date());
             document.getElementById('display-start').innerText = "--:--";
             document.getElementById('display-end').innerText = "--:--";
-            
             document.getElementById('modal').classList.add('active');
             history.pushState({ page: "edit" }, "");
             renderTimeGrids();
         }
 
+        // ОБНОВЛЕННАЯ ФУНКЦИЯ (Точный час + 1 час на конец)
         function openModalWithTime(dateStr, timeStr) {
             editingShiftId = null;
             document.getElementById('modal-title').innerText = "Новая смена";
             document.getElementById('save-btn').innerText = "Сохранить";
             document.getElementById('input-comment').value = "Педикюр";
             
+            // selectedStart берем ровно тот час, куда нажали
             selectedStart = timeStr;
+            
+            // А конец ставим на 1 час позже
             const hh = parseInt(timeStr.split(':')[0]);
             const nextHH = (hh + 1).toString().padStart(2, '0');
             selectedEnd = `${nextHH}:00`;
