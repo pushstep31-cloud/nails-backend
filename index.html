@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>График мастеров</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #FCF8F9;
+            --text-main: #2C2C2C;
+            --card-bg: #FFFFFF;
+            --green-light: #E8F5E9;
+            --green-dark: #1B5E20;
+            --green-border: #A5D6A7;
+            --pink-accent: #FF8DA1;
+            --shadow: 0 4px 16px rgba(0,0,0,0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+            padding-bottom: 80px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        /* Экран входа */
+        .auth-screen {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 50px;
+        }
+
+        .btn {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: none;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: transform 0.1s, box-shadow 0.1s;
+            text-align: center;
+            width: 100%;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn.primary {
+            background: var(--green-light);
+            color: var(--green-dark);
+            box-shadow: inset 0 0 0 2px var(--green-border);
+        }
+
+        .btn.active {
+            background: var(--green-light);
+            color: var(--green-dark);
+            box-shadow: inset 0 0 0 2px var(--green-border);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        input[type="password"] {
+            background: var(--card-bg);
+            border: none;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 16px;
+            box-shadow: var(--shadow);
+            outline: none;
+            color: var(--text-main);
+        }
+
+        /* Скрываем экраны */
+        .hidden { display: none !important; }
+
+        /* Календарь */
+        .week-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            margin-top: 20px;
+        }
+
+        .week-header span {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .week-nav {
+            background: var(--card-bg);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .day-group {
+            margin-bottom: 25px;
+        }
+
+        .day-title {
+            display: inline-block;
+            background: var(--card-bg);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: var(--shadow);
+            margin-bottom: 12px;
+        }
+
+        .day-title.today {
+            background: var(--green-light);
+            color: var(--green-dark);
+            box-shadow: inset 0 0 0 2px var(--green-border);
+        }
+
+        .shift-card {
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 12px;
+            border-left: 6px solid #ccc;
+            position: relative;
+        }
+
+        .shift-card.diana { border-left-color: #4A90D9; }
+        .shift-card.nastya { border-left-color: #D9534F; }
+
+        .master-name {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .master-name.diana { color: #4A90D9; }
+        .master-name.nastya { color: #D9534F; }
+
+        .time {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .comment {
+            color: #777;
+            font-size: 14px;
+            margin-left: 5px;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: none;
+            border: none;
+            color: #ccc;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .delete-btn:active { color: #f44336; }
+
+        /* Модальное окно */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: var(--bg-color);
+            width: 100%;
+            max-width: 500px;
+            border-radius: 24px 24px 0 0;
+            padding: 24px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .time-cell {
+            background: var(--card-bg);
+            padding: 12px 0;
+            text-align: center;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+        }
+
+        .time-cell.selected {
+            background: var(--green-light);
+            color: var(--green-dark);
+            box-shadow: inset 0 0 0 2px var(--green-border);
+        }
+
+        .label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 14px;
+        }
+        
+        input[type="text"] {
+            background: var(--card-bg);
+            border: none;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 16px;
+            box-shadow: var(--shadow);
+            outline: none;
+            color: var(--text-main);
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .close-modal {
+            background: #ffebee;
+            color: #c62828;
+            margin-top: 10px;
+        }
+
+        /* Плавающая кнопка добавления */
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            border-radius: 32px;
+            background: var(--green-border);
+            color: var(--green-dark);
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px rgba(165, 214, 167, 0.5);
+            cursor: pointer;
+            border: none;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ЭКРАН ВХОДА -->
+    <div id="auth-screen" class="auth-screen">
+        <h1>💅 График</h1>
+        <p style="text-align: center; color: #777; margin-bottom: 10px;">Кто вы?</p>
+        <button class="btn" id="btn-diana" onclick="selectMaster('Диана')">Диана 👤</button>
+        <button class="btn" id="btn-nastya" onclick="selectMaster('Настя')">Настя 👤</button>
+        
+        <div class="input-group">
+            <input type="password" id="password" placeholder="Пароль">
+            <button class="btn primary" onclick="login()">Войти</button>
+        </div>
+    </div>
+
+    <!-- ОСНОВНОЙ ЭКРАН -->
+    <div id="main-screen" class="hidden">
+        <h1 id="greeting">💅 График</h1>
+        
+        <div class="week-header">
+            <button class="week-nav" onclick="changeWeek(-1)">←</button>
+            <span id="week-range">Загрузка...</span>
+            <button class="week-nav" onclick="changeWeek(1)">→</button>
+        </div>
+
+        <div id="calendar-container">
+            <!-- Сюда JS будет вставлять дни -->
+        </div>
+
+        <!-- Кнопка добавления -->
+        <button class="fab" onclick="openModal()">+</button>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО (Добавление/Редактирование) -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h2 id="modal-title">Новая смена</h2>
+            
+            <label class="label">Услуга / Комментарий</label>
+            <input type="text" id="input-comment" value="Педикюр">
+
+            <label class="label">Время начала: <span id="display-start" style="color: #1B5E20;">10:00</span></label>
+            <div class="time-grid" id="grid-start"></div>
+
+            <label class="label">Время окончания: <span id="display-end" style="color: #1B5E20;">18:00</span></label>
+            <div class="time-grid" id="grid-end"></div>
+
+            <button class="btn primary" onclick="saveShift()">Сохранить</button>
+            <button class="btn close-modal" onclick="closeModal()">Отмена</button>
+        </div>
+    </div>
+
+    <script>
+        // --- НАСТРОЙКИ И ДАННЫЕ ---
+        const PASSWORDS = { "Диана": "1111", "Настя": "2222" };
+        let currentMaster = null;
+        let currentWeekOffset = 0;
+        let selectedStart = "10:00";
+        let selectedEnd = "18:00";
+        
+        // Имитация базы данных (пока данные хранятся в памяти браузера)
+        // В будущем мы заменим это на запросы к Python (FastAPI)
+        let shiftsDB = []; 
+
+        const ALL_TIMES = [];
+        for (let h = 8; h < 24; h++) {
+            ALL_TIMES.push(`${h.toString().padStart(2, '0')}:00`);
+            ALL_TIMES.push(`${h.toString().padStart(2, '0')}:30`);
+        }
+
+        // --- АВТОРИЗАЦИЯ ---
+        function selectMaster(name) {
+            document.getElementById('btn-diana').classList.remove('active');
+            document.getElementById('btn-nastya').classList.remove('active');
+            if (name === 'Диана') document.getElementById('btn-diana').classList.add('active');
+            if (name === 'Настя') document.getElementById('btn-nastya').classList.add('active');
+            currentMaster = name;
+        }
+
+        function login() {
+            const pwd = document.getElementById('password').value;
+            if (currentMaster && PASSWORDS[currentMaster] === pwd) {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-screen').classList.remove('hidden');
+                document.getElementById('greeting').innerText = `💅 Привет, ${currentMaster}`;
+                renderCalendar();
+            } else {
+                alert("Выберите имя или неверный пароль!");
+            }
+        }
+
+        // --- ЛОГИКА КАЛЕНДАРЯ ---
+        function getWeekDates(offset) {
+            const today = new Date();
+            const dayOfWeek = today.getDay() === 0 ? 6 : today.getDay() - 1; // Делаем Пн = 0
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - dayOfWeek + (offset * 7));
+            
+            const dates = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(startOfWeek);
+                d.setDate(startOfWeek.getDate() + i);
+                dates.push(d);
+            }
+            return dates;
+        }
+
+        function formatDate(date) {
+            const y = date.getFullYear();
+            const m = (date.getMonth() + 1).toString().padStart(2, '0');
+            const d = date.getDate().toString().padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function renderCalendar() {
+            const dates = getWeekDates(currentWeekOffset);
+            const container = document.getElementById('calendar-container');
+            container.innerHTML = '';
+
+            // Заголовок недели
+            const startStr = dates[0].toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit', year: 'numeric'});
+            const endStr = dates[6].toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit', year: 'numeric'});
+            document.getElementById('week-range').innerText = `${startStr} — ${endStr}`;
+
+            const todayStr = formatDate(new Date());
+            const daysRu = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+            dates.forEach((date, index) => {
+                const dateStr = formatDate(date);
+                const isToday = dateStr === todayStr;
+                const dayTitle = `${daysRu[index]}, ${date.toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit'})}`;
+                
+                // Заголовок дня
+                const dayGroup = document.createElement('div');
+                dayGroup.className = 'day-group';
+                
+                const titleEl = document.createElement('div');
+                titleEl.className = `day-title ${isToday ? 'today' : ''}`;
+                titleEl.innerText = isToday ? `👉 Сегодня, ${dayTitle}` : dayTitle;
+                dayGroup.appendChild(titleEl);
+
+                // Смены в этот день
+                const shifts = shiftsDB.filter(s => s.date === dateStr).sort((a,b) => a.start.localeCompare(b.start));
+                
+                if (shifts.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.style.color = "#999";
+                    empty.style.fontSize = "14px";
+                    empty.style.marginLeft = "8px";
+                    empty.innerText = "Выходной / Смен нет";
+                    dayGroup.appendChild(empty);
+                } else {
+                    shifts.forEach(shift => {
+                        const card = document.createElement('div');
+                        card.className = `shift-card ${shift.master === 'Диана' ? 'diana' : 'nastya'}`;
+                        
+                        // Если смена принадлежит текущему мастеру, добавляем кнопку удаления
+                        const canDelete = shift.master === currentMaster;
+                        const delBtnHtml = canDelete ? `<button class="delete-btn" onclick="deleteShift(${shift.id})">🗑️</button>` : '';
+
+                        card.innerHTML = `
+                            ${delBtnHtml}
+                            <div class="master-name ${shift.master === 'Диана' ? 'diana' : 'nastya'}">${shift.master}</div>
+                            <div>
+                                <span class="time">${shift.start}–${shift.end}</span>
+                                <span class="comment">(${shift.comment})</span>
+                            </div>
+                        `;
+                        dayGroup.appendChild(card);
+                    });
+                }
+                container.appendChild(dayGroup);
+            });
+        }
+
+        function changeWeek(direction) {
+            currentWeekOffset += direction;
+            renderCalendar();
+        }
+
+        // --- МОДАЛЬНОЕ ОКНО ---
+        function openModal() {
+            document.getElementById('modal').classList.add('active');
+            renderTimeGrids();
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        function renderTimeGrids() {
+            const gridStart = document.getElementById('grid-start');
+            const gridEnd = document.getElementById('grid-end');
+            gridStart.innerHTML = '';
+            gridEnd.innerHTML = '';
+
+            ALL_TIMES.forEach(time => {
+                // Начало
+                const cellS = document.createElement('div');
+                cellS.className = `time-cell ${time === selectedStart ? 'selected' : ''}`;
+                cellS.innerText = time;
+                cellS.onclick = () => {
+                    selectedStart = time;
+                    document.getElementById('display-start').innerText = time;
+                    renderTimeGrids();
+                };
+                gridStart.appendChild(cellS);
+
+                // Конец
+                const cellE = document.createElement('div');
+                cellE.className = `time-cell ${time === selectedEnd ? 'selected' : ''}`;
+                cellE.innerText = time;
+                cellE.onclick = () => {
+                    selectedEnd = time;
+                    document.getElementById('display-end').innerText = time;
+                    renderTimeGrids();
+                };
+                gridEnd.appendChild(cellE);
+            });
+        }
+
+        function saveShift() {
+            if (selectedStart >= selectedEnd) {
+                alert("Время окончания должно быть позже начала!");
+                return;
+            }
+
+            const comment = document.getElementById('input-comment').value;
+            const dates = getWeekDates(currentWeekOffset);
+            const todayStr = formatDate(new Date());
+            // По умолчанию сохраняем на сегодня, если неделя текущая, иначе на понедельник
+            const targetDate = dates.find(d => formatDate(d) === todayStr) ? new Date() : dates[0];
+
+            const newShift = {
+                id: Date.now(), // Уникальный ID
+                master: currentMaster,
+                date: formatDate(targetDate),
+                start: selectedStart,
+                end: selectedEnd,
+                comment: comment
+            };
+
+            // Проверка на пересечение
+            const overlap = shiftsDB.find(s => 
+                s.date === newShift.date && 
+                (selectedStart < s.end && selectedEnd > s.start)
+            );
+
+            if (overlap) {
+                alert(`Пересечение! ${overlap.master} уже работает с ${overlap.start} до ${overlap.end}`);
+                return;
+            }
+
+            shiftsDB.push(newShift);
+            closeModal();
+            renderCalendar();
+        }
+
+        function deleteShift(id) {
+            if (confirm("Удалить эту смену?")) {
+                shiftsDB = shiftsDB.filter(s => s.id !== id);
+                renderCalendar();
+            }
+        }
+    </script>
+</body>
+</html>
