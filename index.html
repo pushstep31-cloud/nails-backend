@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>График мастеров</title>
     
-    <!-- Подключение манифеста и иконок для PWA -->
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
@@ -269,7 +268,6 @@
     <script>
         window.onerror = function(msg) { alert("Ошибка: " + msg); return false; };
 
-        // РЕГИСТРАЦИЯ SERVICE WORKER ДЛЯ УСТАНОВКИ
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').then(registration => {
@@ -406,7 +404,7 @@
             return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
         }
 
-        // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
+        // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ БЕЗ ЗАГРУЗКИ ---
         let draggedElement = null;
         let draggedShiftId = null;
 
@@ -548,6 +546,7 @@
             gridContainer.classList.add('animate-grid');
         }
 
+        // ОБНОВЛЕННАЯ ФУНКЦИЯ (БЕЗ ЭКРАНА ЗАГРУЗКИ)
         async function moveShift(id, newDate, newStartTime) {
             const shift = shiftsDB.find(s => s.id === id);
             if (!shift) return;
@@ -564,15 +563,29 @@
 
             const data = { master: currentMaster, date: newDate, start: newStartTime, end: newEnd, comment: shift.comment };
             
-            showLoading();
+            // Отправляем на сервер в фоне (без showLoading)
             try {
-                await fetch(`${API_URL}/shifts/${id}`, { 
+                const res = await fetch(`${API_URL}/shifts/${id}`, { 
                     method: 'PUT', 
                     headers: {'Content-Type': 'application/json'}, 
                     body: JSON.stringify(data) 
                 });
-                loadShifts();
-            } catch (e) { hideLoading(); showAlert("Ошибка перемещения"); }
+                
+                if (!res.ok) {
+                    const err = await res.json(); 
+                    showAlert(err.detail);
+                    loadShifts(); // Если ошибка (пересечение), возвращаем как было
+                } else {
+                    // Если успешно, обновляем локальную базу и перерисовываем без запроса к серверу
+                    shift.date = newDate;
+                    shift.start = newStartTime;
+                    shift.end = newEnd;
+                    renderGrid();
+                }
+            } catch (e) { 
+                showAlert("Ошибка перемещения"); 
+                loadShifts(); 
+            }
         }
 
         function changeWeek(dir) { currentWeekOffset += dir; renderGrid(); }
