@@ -27,7 +27,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 70px; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 70px; overflow-x: hidden; }
 
         .loading-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .loading-screen.hidden { display: none; }
@@ -49,35 +49,34 @@
         .week-range { font-weight: 700; font-size: 16px; }
 
         /* СЕТКА */
-        .grid-container { display: flex; background: var(--card-bg); margin: 5px; border-radius: 12px; box-shadow: var(--shadow); overflow-x: hidden; }
+        .grid-container { display: flex; background: var(--card-bg); margin: 5px; border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
         
-        /* Колонка с часами */
-        .time-column { width: 42px; min-width: 42px; background: #FAFAFA; border-right: 1px solid #EEE; }
-        .time-label { height: var(--hour-height); font-size: 10px; color: #999; text-align: right; padding-right: 4px; padding-top: 6px; border-bottom: 1px dashed #EEE; }
+        /* Колонка с часами (сузили) */
+        .time-column { width: 36px; min-width: 36px; background: #FAFAFA; border-right: 1px solid #EEE; }
+        .time-label { height: var(--hour-height); font-size: 9px; color: #999; text-align: right; padding-right: 3px; padding-top: 6px; border-bottom: 1px dashed #EEE; }
         
         /* Колонки с днями */
         .days-wrapper { display: flex; flex: 1; position: relative; }
         .day-column { flex: 1; min-width: 0; border-right: 1px solid #EEE; position: relative; }
         .day-column:last-child { border-right: none; }
         
-        /* Заголовки дней (уменьшены) */
+        /* Заголовки дней (уменьшили шрифт) */
         .day-header { position: sticky; top: 0; background: var(--card-bg); padding: 6px 2px; text-align: center; border-bottom: 2px solid #EEE; z-index: 5; }
-        .day-name { font-weight: 700; font-size: 11px; }
-        .day-date { font-size: 10px; color: #777; margin-top: 2px; }
+        .day-name { font-weight: 700; font-size: 10px; }
+        .day-date { font-size: 9px; color: #777; margin-top: 2px; }
         .day-header.today { background: var(--diana-bg); }
         .day-header.today .day-name { color: var(--diana-color); }
 
         /* Сетка часов */
         .hour-slot { height: var(--hour-height); border-bottom: 1px solid #F0F0F0; }
 
-        /* Блоки смен (уменьшены) */
-        .shift-block { position: absolute; left: 1px; right: 1px; border-radius: 4px; padding: 2px; font-size: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; z-index: 2; display: flex; flex-direction: column; }
-        .shift-block.diana { background: var(--diana-bg); border-left: 3px solid var(--diana-color); color: var(--diana-color); }
-        .shift-block.nastya { background: var(--nastya-bg); border-left: 3px solid var(--nastya-color); color: var(--nastya-color); }
+        /* Блоки смен (очень компактные) */
+        .shift-block { position: absolute; left: 1px; right: 1px; border-radius: 4px; padding: 2px; font-size: 7px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer; z-index: 2; display: flex; flex-direction: column; }
+        .shift-block.diana { background: var(--diana-bg); border-left: 2px solid var(--diana-color); color: var(--diana-color); }
+        .shift-block.nastya { background: var(--nastya-bg); border-left: 2px solid var(--nastya-color); color: var(--nastya-color); }
         
         .shift-title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .shift-time { font-size: 8px; font-weight: 600; }
-        .shift-comment { font-size: 8px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .shift-time { font-size: 7px; font-weight: 600; }
 
         /* НИЖНЕЕ МЕНЮ */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--card-bg); display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 100; }
@@ -178,7 +177,8 @@
             <label class="label">Новое имя</label>
             <input type="text" id="settings-name">
             <label class="label">Новый пароль</label>
-            <input type="password" id="settings-password" placeholder="Оставьте пустым">
+            <!-- Сократили текст подсказки, чтобы влезал -->
+            <input type="password" id="settings-password" placeholder="Не менять">
             <button class="btn primary" onclick="saveSettings()">Сохранить</button>
             <button class="btn" style="margin-top:10px; color:red;" onclick="logout()">Выйти</button>
             <button class="btn" style="margin-top:10px;" onclick="closeSettingsModal()">Закрыть</button>
@@ -278,7 +278,7 @@
             document.getElementById('week-range').innerText = `${startStr} — ${endStr}`;
 
             const timeCol = document.getElementById('time-column');
-            timeCol.innerHTML = '<div style="height:35px;"></div>'; // Отступ под заголовки
+            timeCol.innerHTML = '<div style="height:33px;"></div>'; 
             HOURS.forEach(h => {
                 timeCol.innerHTML += `<div class="time-label">${h.toString().padStart(2, '0')}:00</div>`;
             });
@@ -327,7 +327,7 @@
 
                     block.innerHTML = `
                         <div class="shift-title">${shift.master}</div>
-                        <div class="shift-time">${shift.start}–${shift.end}</div>
+                        <div class="shift-time">${shift.start.substring(0,5)}</div>
                     `;
 
                     if (shift.master === currentMaster) {
