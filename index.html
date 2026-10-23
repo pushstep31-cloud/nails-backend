@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>График мастеров</title>
     
-    <!-- Подключаем иконку и манифест для установки как приложение -->
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="manifest" href="manifest.json">
@@ -21,6 +20,8 @@
             --green-border: #A5D6A7;
             --shadow: 0 4px 16px rgba(0,0,0,0.06);
             --pink-accent: #FF8DA1;
+            --red-light: #FFEBEE;
+            --red-dark: #C62828;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -29,42 +30,39 @@
 
         /* ЭКРАН ЗАГРУЗКИ */
         .loading-screen {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: var(--bg-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg-color); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 9999;
             transition: opacity 0.4s ease, visibility 0.4s ease;
         }
-        .loading-screen.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid var(--green-light);
-            border-top: 5px solid var(--green-border);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            width: 50px; height: 50px; border: 5px solid var(--green-light);
+            border-top: 5px solid var(--green-border); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 20px;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .loading-text {
-            font-weight: 600;
-            color: var(--green-dark);
-            font-size: 16px;
-            text-align: center;
-            line-height: 1.4;
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { font-weight: 600; color: var(--green-dark); font-size: 16px; text-align: center; line-height: 1.4; }
 
+        /* КРАСИВОЕ УВЕДОМЛЕНИЕ */
+        .alert-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4); display: flex; align-items: center;
+            justify-content: center; z-index: 10000; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease; padding: 20px;
+        }
+        .alert-overlay.active { opacity: 1; pointer-events: auto; }
+        .alert-box {
+            background: var(--card-bg); padding: 24px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); width: 100%; max-width: 350px;
+            text-align: center; transform: translateY(20px); transition: transform 0.3s ease;
+        }
+        .alert-overlay.active .alert-box { transform: translateY(0); }
+        .alert-icon { font-size: 40px; margin-bottom: 15px; }
+        .alert-title { font-weight: 700; font-size: 18px; margin-bottom: 10px; color: var(--text-main); }
+        .alert-message { font-size: 14px; color: #666; margin-bottom: 20px; line-height: 1.4; }
+        .alert-btn { background: var(--pink-accent); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 16px; width: 100%; cursor: pointer; }
+        
         .auth-screen { display: flex; flex-direction: column; gap: 15px; margin-top: 50px; }
         .btn { background: var(--card-bg); color: var(--text-main); border: none; padding: 16px; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow); transition: transform 0.1s; text-align: center; width: 100%; }
         .btn:active { transform: scale(0.98); }
@@ -98,20 +96,37 @@
         .delete-btn { position: absolute; top: 12px; right: 12px; background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer; }
         .delete-btn:active { color: #f44336; }
 
-        .logout-btn { background: #ffebee; color: #c62828; margin-top: 30px; }
+        .logout-btn { background: var(--red-light); color: var(--red-dark); margin-top: 30px; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal { background: var(--bg-color); width: 100%; max-width: 500px; border-radius: 24px 24px 0 0; padding: 24px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-height: 90vh; overflow-y: auto; }
+        .modal { background: var(--bg-color); width: 100%; max-width: 500px; border-radius: 24px 24px 0 0; padding: 24px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-height: 95vh; overflow-y: auto; }
         .modal-overlay.active .modal { transform: translateY(0); }
         .modal h2 { font-size: 20px; margin-bottom: 20px; text-align: center; }
 
-        .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; max-height: 200px; overflow-y: auto; padding-right: 5px; }
-        .time-cell { background: var(--card-bg); padding: 12px 0; text-align: center; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; box-shadow: var(--shadow); transition: all 0.2s; border: 1px solid var(--pink-accent); }
+        /* КОМПАКТНАЯ СЕТКА ВРЕМЕНИ БЕЗ ПРОКРУТКИ */
+        .time-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 4px; /* Уменьшили отступы */
+            margin-bottom: 15px; 
+        }
+        .time-cell { 
+            background: var(--card-bg); 
+            padding: 8px 0; /* Уменьшили высоту кнопок */
+            text-align: center; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            font-size: 13px; /* Чуть уменьшили шрифт */
+            cursor: pointer; 
+            box-shadow: var(--shadow); 
+            transition: all 0.2s; 
+            border: 1px solid var(--pink-accent); 
+        }
         .time-cell.selected { background: var(--green-light); color: var(--green-dark); box-shadow: inset 0 0 0 2px var(--green-border); border-color: var(--green-border); }
 
         .label { font-weight: 600; margin-bottom: 8px; display: block; font-size: 14px; }
-        .close-modal { background: #ffebee; color: #c62828; margin-top: 10px; }
+        .close-modal { background: var(--red-light); color: var(--red-dark); margin-top: 10px; }
 
         .fab { position: fixed; bottom: 24px; right: 24px; width: 64px; height: 64px; border-radius: 32px; background: var(--green-border); color: var(--green-dark); font-size: 32px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(165, 214, 167, 0.5); cursor: pointer; border: none; z-index: 50; }
     </style>
@@ -122,6 +137,16 @@
     <div id="loading-screen" class="loading-screen hidden">
         <div class="spinner"></div>
         <div class="loading-text">Обновление графика...<br><span style="font-size:12px; font-weight:400; color:#777;">(Сервер просыпается, это может занять до 30 секунд)</span></div>
+    </div>
+
+    <!-- КРАСИВОЕ УВЕДОМЛЕНИЕ -->
+    <div id="custom-alert" class="alert-overlay">
+        <div class="alert-box">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-title">Внимание</div>
+            <div class="alert-message" id="alert-text">Текст уведомления</div>
+            <button class="alert-btn" onclick="closeAlert()">Понятно</button>
+        </div>
     </div>
 
     <!-- ЭКРАН ВХОДА -->
@@ -147,9 +172,7 @@
             <button class="week-nav" onclick="changeWeek(1)">→</button>
         </div>
 
-        <div id="calendar-container">
-            <!-- Сюда JS будет вставлять дни -->
-        </div>
+        <div id="calendar-container"></div>
 
         <button class="btn logout-btn" onclick="logout()">Выйти из профиля</button>
         <button class="fab" onclick="openModal()">+</button>
@@ -178,7 +201,6 @@
     </div>
 
     <script>
-        // Ссылка на ваш сервер Render
         const API_URL = "https://nailscalendar.onrender.com"; 
         
         const PASSWORDS = { "Диана": "1111", "Настя": "2222" };
@@ -194,16 +216,19 @@
             ALL_TIMES.push(`${h.toString().padStart(2, '0')}:30`);
         }
 
-        // --- УПРАВЛЕНИЕ ЭКРАНОМ ЗАГРУЗКИ ---
-        function showLoading() {
-            document.getElementById('loading-screen').classList.remove('hidden');
+        // --- УВЕДОМЛЕНИЯ И ЗАГРУЗКА ---
+        function showLoading() { document.getElementById('loading-screen').classList.remove('hidden'); }
+        function hideLoading() { document.getElementById('loading-screen').classList.add('hidden'); }
+
+        function showAlert(message) {
+            document.getElementById('alert-text').innerText = message;
+            document.getElementById('custom-alert').classList.add('active');
+        }
+        function closeAlert() {
+            document.getElementById('custom-alert').classList.remove('active');
         }
 
-        function hideLoading() {
-            document.getElementById('loading-screen').classList.add('hidden');
-        }
-
-        // --- АВТОРИЗАЦИЯ И СОХРАНЕНИЕ СЕССИИ ---
+        // --- АВТОРИЗАЦИЯ ---
         window.onload = function() {
             const savedMaster = localStorage.getItem('nailsMaster');
             if (savedMaster) {
@@ -211,7 +236,6 @@
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-screen').classList.remove('hidden');
                 document.getElementById('greeting').innerText = `💅 Привет, ${currentMaster}`;
-                
                 showLoading(); 
                 loadShifts();
             }
@@ -232,11 +256,10 @@
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-screen').classList.remove('hidden');
                 document.getElementById('greeting').innerText = `💅 Привет, ${currentMaster}`;
-                
                 showLoading(); 
                 loadShifts(); 
             } else {
-                alert("Выберите имя или неверный пароль!");
+                showAlert("Выберите имя или неверный пароль!");
             }
         }
 
@@ -256,13 +279,13 @@
             } catch (e) {
                 console.error(e);
                 hideLoading(); 
-                alert("Не удалось загрузить данные. Сервер просыпается, подождите 30 секунд и обновите страницу.");
+                showAlert("Не удалось загрузить данные. Сервер просыпается, подождите 30 секунд и обновите страницу.");
             }
         }
 
         async function saveShift() {
             if (selectedStart >= selectedEnd) {
-                alert("Время окончания должно быть позже начала!");
+                showAlert("Время окончания должно быть позже начала!");
                 return;
             }
 
@@ -270,7 +293,7 @@
             const selectedDate = document.getElementById('input-date').value;
 
             if (!selectedDate) {
-                alert("Пожалуйста, выберите дату!");
+                showAlert("Пожалуйста, выберите дату!");
                 return;
             }
 
@@ -293,14 +316,14 @@
                 if (!response.ok) {
                     const error = await response.json();
                     hideLoading();
-                    alert(error.detail); 
+                    showAlert(error.detail); 
                 } else {
                     closeModal();
                     loadShifts(); 
                 }
             } catch (e) {
                 hideLoading();
-                alert("Ошибка соединения с сервером");
+                showAlert("Ошибка соединения с сервером");
             }
         }
 
@@ -312,7 +335,7 @@
                     loadShifts(); 
                 } catch (e) {
                     hideLoading();
-                    alert("Ошибка удаления");
+                    showAlert("Ошибка удаления");
                 }
             }
         }
