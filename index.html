@@ -7,19 +7,56 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #FFF0F5; /* Нежно-розовый фон */
+            --bg-color: #FFF0F5;
             --text-main: #2C2C2C;
             --card-bg: #FFFFFF;
             --green-light: #E8F5E9;
             --green-dark: #1B5E20;
             --green-border: #A5D6A7;
             --shadow: 0 4px 16px rgba(0,0,0,0.06);
-            --pink-accent: #FF8DA1; /* Насыщенный розовый для окантовки */
+            --pink-accent: #FF8DA1;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; max-width: 500px; margin: 0 auto; padding-bottom: 80px; }
         h1 { font-size: 24px; font-weight: 700; margin-bottom: 20px; }
+
+        /* ЭКРАН ЗАГРУЗКИ */
+        .loading-screen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+        .loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--green-light);
+            border-top: 5px solid var(--green-border);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            font-weight: 600;
+            color: var(--green-dark);
+            font-size: 16px;
+            text-align: center;
+        }
 
         .auth-screen { display: flex; flex-direction: column; gap: 15px; margin-top: 50px; }
         .btn { background: var(--card-bg); color: var(--text-main); border: none; padding: 16px; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow); transition: transform 0.1s; text-align: center; width: 100%; }
@@ -36,10 +73,10 @@
         .week-header span { font-weight: 700; font-size: 16px; }
         .week-nav { background: var(--card-bg); border: none; width: 40px; height: 40px; border-radius: 50%; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
 
-        .day-group { margin-bottom: 25px; padding-bottom: 25px; border-bottom: 2px dashed var(--pink-accent); /* Линии между датами */ }
-        .day-group:last-child { border-bottom: none; padding-bottom: 0; } /* Убираем линию у последнего дня */
+        .day-group { margin-bottom: 25px; padding-bottom: 25px; border-bottom: 2px dashed var(--pink-accent); }
+        .day-group:last-child { border-bottom: none; padding-bottom: 0; }
         
-        .day-title { display: inline-block; background: var(--card-bg); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; box-shadow: var(--shadow); margin-bottom: 12px; border: 1px solid var(--pink-accent); /* Окантовка дат */ }
+        .day-title { display: inline-block; background: var(--card-bg); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; box-shadow: var(--shadow); margin-bottom: 12px; border: 1px solid var(--pink-accent); }
         .day-title.today { background: var(--green-light); color: var(--green-dark); box-shadow: inset 0 0 0 2px var(--green-border); border: 1px solid var(--green-border); }
 
         .shift-card { background: var(--card-bg); padding: 16px; border-radius: 16px; box-shadow: var(--shadow); margin-bottom: 12px; border-left: 6px solid #ccc; position: relative; }
@@ -56,7 +93,6 @@
 
         .logout-btn { background: #ffebee; color: #c62828; margin-top: 30px; }
 
-        /* Модальное окно */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal { background: var(--bg-color); width: 100%; max-width: 500px; border-radius: 24px 24px 0 0; padding: 24px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-height: 90vh; overflow-y: auto; }
@@ -74,6 +110,12 @@
     </style>
 </head>
 <body>
+
+    <!-- ЭКРАН ЗАГРУЗКИ -->
+    <div id="loading-screen" class="loading-screen hidden">
+        <div class="spinner"></div>
+        <div class="loading-text">Обновление графика...<br><span style="font-size:12px; font-weight:400; color:#777;">(Сервер просыпается, это может занять до 30 секунд)</span></div>
+    </div>
 
     <!-- ЭКРАН ВХОДА -->
     <div id="auth-screen" class="auth-screen">
@@ -103,8 +145,6 @@
         </div>
 
         <button class="btn logout-btn" onclick="logout()">Выйти из профиля</button>
-
-        <!-- Кнопка добавления -->
         <button class="fab" onclick="openModal()">+</button>
     </div>
 
@@ -146,6 +186,15 @@
             ALL_TIMES.push(`${h.toString().padStart(2, '0')}:30`);
         }
 
+        // --- УПРАВЛЕНИЕ ЭКРАНОМ ЗАГРУЗКИ ---
+        function showLoading() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-screen').classList.add('hidden');
+        }
+
         // --- АВТОРИЗАЦИЯ И СОХРАНЕНИЕ СЕССИИ ---
         window.onload = function() {
             const savedMaster = localStorage.getItem('nailsMaster');
@@ -154,6 +203,8 @@
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-screen').classList.remove('hidden');
                 document.getElementById('greeting').innerText = `💅 Привет, ${currentMaster}`;
+                
+                showLoading(); // Показываем загрузку при авто-входе
                 loadShifts();
             }
         };
@@ -169,10 +220,12 @@
         function login() {
             const pwd = document.getElementById('password').value;
             if (currentMaster && PASSWORDS[currentMaster] === pwd) {
-                localStorage.setItem('nailsMaster', currentMaster); // Запоминаем вход
+                localStorage.setItem('nailsMaster', currentMaster);
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-screen').classList.remove('hidden');
                 document.getElementById('greeting').innerText = `💅 Привет, ${currentMaster}`;
+                
+                showLoading(); // Показываем загрузку при входе
                 loadShifts(); 
             } else {
                 alert("Выберите имя или неверный пароль!");
@@ -180,8 +233,8 @@
         }
 
         function logout() {
-            localStorage.removeItem('nailsMaster'); // Стираем память
-            location.reload(); // Перезагружаем страницу
+            localStorage.removeItem('nailsMaster');
+            location.reload();
         }
 
         // --- РАБОТА С СЕРВЕРОМ ---
@@ -191,8 +244,10 @@
                 if (!response.ok) throw new Error("Ошибка сервера");
                 shiftsDB = await response.json();
                 renderCalendar(); 
+                hideLoading(); // Прячем загрузку, когда данные пришли
             } catch (e) {
                 console.error(e);
+                hideLoading(); // Прячем загрузку даже при ошибке
                 alert("Не удалось загрузить данные. Сервер просыпается, подождите 30 секунд и обновите страницу.");
             }
         }
@@ -219,6 +274,7 @@
                 comment: comment
             };
 
+            showLoading(); // Показываем загрузку при сохранении
             try {
                 const response = await fetch(`${API_URL}/shifts`, {
                     method: 'POST',
@@ -228,22 +284,26 @@
                 
                 if (!response.ok) {
                     const error = await response.json();
+                    hideLoading();
                     alert(error.detail); 
                 } else {
                     closeModal();
                     loadShifts(); 
                 }
             } catch (e) {
+                hideLoading();
                 alert("Ошибка соединения с сервером");
             }
         }
 
         async function deleteShift(id) {
             if (confirm("Удалить эту смену?")) {
+                showLoading(); // Показываем загрузку при удалении
                 try {
                     await fetch(`${API_URL}/shifts/${id}`, { method: 'DELETE' });
                     loadShifts(); 
                 } catch (e) {
+                    hideLoading();
                     alert("Ошибка удаления");
                 }
             }
