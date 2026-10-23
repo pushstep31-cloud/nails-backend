@@ -12,38 +12,32 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #F8F9FA; /* Немного сероватый фон для сетки */
+            --bg-color: #F8F9FA;
             --text-main: #2C2C2C;
             --card-bg: #FFFFFF;
-            --green-light: #E8F5E9;
-            --green-dark: #1B5E20;
-            --green-border: #A5D6A7;
             --shadow: 0 2px 8px rgba(0,0,0,0.05);
-            --pink-accent: #FF8DA1;
             
-            /* Цвета как в Dikidi */
+            /* Цвета */
             --diana-color: #2196F3;
             --diana-bg: #E3F2FD;
             --nastya-color: #F44336;
             --nastya-bg: #FFEBEE;
             
-            --hour-height: 40px; /* Высота одного часа */
+            --hour-height: 40px; 
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 70px; }
 
-        /* ЭКРАН ЗАГРУЗКИ */
         .loading-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .loading-screen.hidden { display: none; }
-        .spinner { width: 50px; height: 50px; border: 5px solid var(--green-light); border-top: 5px solid var(--green-border); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        .spinner { width: 50px; height: 50px; border: 5px solid #E8F5E9; border-top: 5px solid #A5D6A7; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* ЭКРАН ВХОДА */
         .auth-screen { display: flex; flex-direction: column; gap: 15px; margin: 50px auto; max-width: 400px; padding: 20px; }
         .btn { background: var(--card-bg); color: var(--text-main); border: none; padding: 16px; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow); text-align: center; width: 100%; }
-        .btn.primary { background: var(--green-light); color: var(--green-dark); box-shadow: inset 0 0 0 2px var(--green-border); }
-        .btn.active { background: var(--green-light); color: var(--green-dark); box-shadow: inset 0 0 0 2px var(--green-border); }
+        .btn.primary { background: #E8F5E9; color: #1B5E20; box-shadow: inset 0 0 0 2px #A5D6A7; }
+        .btn.active { background: #E8F5E9; color: #1B5E20; box-shadow: inset 0 0 0 2px #A5D6A7; }
         .input-group { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
         input[type="password"], input[type="text"], input[type="date"] { background: var(--card-bg); border: none; padding: 16px; border-radius: 16px; font-size: 16px; box-shadow: var(--shadow); outline: none; color: var(--text-main); width: 100%; margin-bottom: 15px; }
 
@@ -55,44 +49,44 @@
         .week-range { font-weight: 700; font-size: 16px; }
 
         /* СЕТКА */
-        .grid-container { display: flex; overflow-x: auto; background: var(--card-bg); margin: 10px; border-radius: 12px; box-shadow: var(--shadow); }
+        .grid-container { display: flex; background: var(--card-bg); margin: 5px; border-radius: 12px; box-shadow: var(--shadow); overflow-x: hidden; }
         
         /* Колонка с часами */
-        .time-column { min-width: 50px; background: #FAFAFA; border-right: 1px solid #EEE; }
-        .time-label { height: var(--hour-height); font-size: 11px; color: #999; text-align: right; padding-right: 5px; padding-top: 5px; border-bottom: 1px dashed #EEE; }
+        .time-column { width: 42px; min-width: 42px; background: #FAFAFA; border-right: 1px solid #EEE; }
+        .time-label { height: var(--hour-height); font-size: 10px; color: #999; text-align: right; padding-right: 4px; padding-top: 6px; border-bottom: 1px dashed #EEE; }
         
         /* Колонки с днями */
         .days-wrapper { display: flex; flex: 1; position: relative; }
-        .day-column { flex: 1; min-width: 80px; border-right: 1px solid #EEE; position: relative; }
+        .day-column { flex: 1; min-width: 0; border-right: 1px solid #EEE; position: relative; }
         .day-column:last-child { border-right: none; }
         
-        /* Заголовки дней */
-        .day-header { position: sticky; top: 0; background: var(--card-bg); padding: 10px 5px; text-align: center; border-bottom: 2px solid #EEE; z-index: 5; }
-        .day-name { font-weight: 700; font-size: 14px; }
-        .day-date { font-size: 12px; color: #777; }
+        /* Заголовки дней (уменьшены) */
+        .day-header { position: sticky; top: 0; background: var(--card-bg); padding: 6px 2px; text-align: center; border-bottom: 2px solid #EEE; z-index: 5; }
+        .day-name { font-weight: 700; font-size: 11px; }
+        .day-date { font-size: 10px; color: #777; margin-top: 2px; }
         .day-header.today { background: var(--diana-bg); }
         .day-header.today .day-name { color: var(--diana-color); }
 
-        /* Сетка часов (фон) */
+        /* Сетка часов */
         .hour-slot { height: var(--hour-height); border-bottom: 1px solid #F0F0F0; }
 
-        /* Блоки смен */
-        .shift-block { position: absolute; left: 2px; right: 2px; border-radius: 6px; padding: 4px; font-size: 10px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; z-index: 2; display: flex; flex-direction: column; }
-        .shift-block.diana { background: var(--diana-bg); border-left: 4px solid var(--diana-color); color: var(--diana-color); }
-        .shift-block.nastya { background: var(--nastya-bg); border-left: 4px solid var(--nastya-color); color: var(--nastya-color); }
+        /* Блоки смен (уменьшены) */
+        .shift-block { position: absolute; left: 1px; right: 1px; border-radius: 4px; padding: 2px; font-size: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; z-index: 2; display: flex; flex-direction: column; }
+        .shift-block.diana { background: var(--diana-bg); border-left: 3px solid var(--diana-color); color: var(--diana-color); }
+        .shift-block.nastya { background: var(--nastya-bg); border-left: 3px solid var(--nastya-color); color: var(--nastya-color); }
         
-        .shift-title { font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .shift-time { font-size: 9px; font-weight: 600; }
-        .shift-comment { font-size: 9px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .shift-title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .shift-time { font-size: 8px; font-weight: 600; }
+        .shift-comment { font-size: 8px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* НИЖНЕЕ МЕНЮ */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--card-bg); display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 100; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #999; font-size: 10px; cursor: pointer; text-decoration: none; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #999; font-size: 10px; cursor: pointer; }
         .nav-item.active { color: var(--diana-color); }
         .nav-icon { font-size: 20px; margin-bottom: 2px; }
         .nav-add-btn { background: var(--diana-color); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; margin-top: -20px; box-shadow: 0 4px 10px rgba(33, 150, 243, 0.4); }
 
-        /* МОДАЛЬНОЕ ОКНО */
+        /* МОДАЛЬНЫЕ ОКНА */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal { background: var(--card-bg); width: 100%; max-width: 500px; border-radius: 20px 20px 0 0; padding: 24px; transform: translateY(100%); transition: transform 0.3s ease; max-height: 90vh; overflow-y: auto; }
@@ -104,7 +98,6 @@
         .time-cell.selected { background: var(--diana-bg); color: var(--diana-color); box-shadow: inset 0 0 0 2px var(--diana-color); }
         .label { font-weight: 600; margin-bottom: 5px; display: block; font-size: 13px; }
         
-        /* Утилиты */
         .alert-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .alert-overlay.active { opacity: 1; pointer-events: auto; }
         .alert-box { background: var(--card-bg); padding: 20px; border-radius: 16px; text-align: center; max-width: 300px; width: 90%; }
@@ -115,7 +108,7 @@
 
     <div id="loading-screen" class="loading-screen">
         <div class="spinner"></div>
-        <div style="font-weight:600; color:var(--green-dark);">Загрузка...</div>
+        <div style="font-weight:600; color:#1B5E20;">Загрузка...</div>
     </div>
 
     <div id="custom-alert" class="alert-overlay">
@@ -126,7 +119,6 @@
         </div>
     </div>
 
-    <!-- ЭКРАН ВХОДА -->
     <div id="auth-screen" class="auth-screen hidden">
         <h1 style="text-align:center;">💅 График</h1>
         <p style="text-align: center; color: #777;">Кто вы?</p>
@@ -137,9 +129,7 @@
         </div>
     </div>
 
-    <!-- ОСНОВНОЙ ЭКРАН -->
     <div id="main-screen" class="hidden">
-        
         <div class="calendar-header">
             <button class="week-nav" onclick="changeWeek(-1)">←</button>
             <div class="week-range" id="week-range">Загрузка...</div>
@@ -151,7 +141,6 @@
             <div class="days-wrapper" id="days-wrapper"></div>
         </div>
 
-        <!-- НИЖНЕЕ МЕНЮ -->
         <div class="bottom-nav">
             <div class="nav-item active">
                 <div class="nav-icon">📅</div>
@@ -167,7 +156,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО СМЕНЫ -->
     <div class="modal-overlay" id="modal">
         <div class="modal">
             <h2 id="modal-title">Новая смена</h2>
@@ -184,23 +172,21 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО НАСТРОЕК -->
     <div class="modal-overlay" id="settings-modal">
         <div class="modal">
             <h2>Настройки</h2>
             <label class="label">Новое имя</label>
             <input type="text" id="settings-name">
             <label class="label">Новый пароль</label>
-            <input type="password" id="settings-password" placeholder="Оставьте пустым, чтобы не менять">
+            <input type="password" id="settings-password" placeholder="Оставьте пустым">
             <button class="btn primary" onclick="saveSettings()">Сохранить</button>
-            <button class="btn" style="margin-top:10px; color:red;" onclick="logout()">Выйти из профиля</button>
+            <button class="btn" style="margin-top:10px; color:red;" onclick="logout()">Выйти</button>
             <button class="btn" style="margin-top:10px;" onclick="closeSettingsModal()">Закрыть</button>
         </div>
     </div>
 
     <script>
         window.onerror = function(msg) { alert("Ошибка: " + msg); return false; };
-
         const API_URL = "https://nailscalendar.onrender.com"; 
         
         let currentMaster = null;
@@ -210,24 +196,20 @@
         let shiftsDB = []; 
         let editingShiftId = null; 
 
-        // Генерируем часы с 8 до 23
         const HOURS = [];
-        for (let h = 8; h <= 23; h++) {
-            HOURS.push(h);
-        }
+        for (let h = 8; h <= 23; h++) HOURS.push(h);
+        
         const ALL_TIMES = [];
         for (let h = 8; h < 24; h++) {
             ALL_TIMES.push(`${h.toString().padStart(2, '0')}:00`);
             ALL_TIMES.push(`${h.toString().padStart(2, '0')}:30`);
         }
 
-        // --- УТИЛИТЫ ---
         function showLoading() { document.getElementById('loading-screen').classList.remove('hidden'); }
         function hideLoading() { document.getElementById('loading-screen').classList.add('hidden'); }
         function showAlert(msg) { document.getElementById('alert-text').innerText = msg; document.getElementById('custom-alert').classList.add('active'); }
         function closeAlert() { document.getElementById('custom-alert').classList.remove('active'); }
 
-        // --- АВТОРИЗАЦИЯ ---
         async function loadUsers() {
             try {
                 const res = await fetch(`${API_URL}/users`);
@@ -249,7 +231,6 @@
         async function login() {
             const pwd = document.getElementById('password').value;
             if (!currentMaster) return showAlert("Выберите имя");
-            
             showLoading();
             try {
                 const res = await fetch(`${API_URL}/login`, {
@@ -267,14 +248,13 @@
 
         function logout() { localStorage.removeItem('nailsMaster'); location.reload(); }
 
-        // --- ДАННЫЕ И СЕТКА ---
         async function loadShifts() {
             try {
                 const res = await fetch(`${API_URL}/shifts`);
                 shiftsDB = await res.json();
                 renderGrid();
                 hideLoading();
-            } catch (e) { hideLoading(); showAlert("Ошибка загрузки данных"); }
+            } catch (e) { hideLoading(); showAlert("Ошибка загрузки"); }
         }
 
         function getWeekDates(offset) {
@@ -297,14 +277,12 @@
             const endStr = dates[6].toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit'});
             document.getElementById('week-range').innerText = `${startStr} — ${endStr}`;
 
-            // Рисуем левую колонку с часами
             const timeCol = document.getElementById('time-column');
-            timeCol.innerHTML = '<div style="height:45px;"></div>'; // Отступ под заголовки дней
+            timeCol.innerHTML = '<div style="height:35px;"></div>'; // Отступ под заголовки
             HOURS.forEach(h => {
                 timeCol.innerHTML += `<div class="time-label">${h.toString().padStart(2, '0')}:00</div>`;
             });
 
-            // Рисуем колонки дней
             const daysWrapper = document.getElementById('days-wrapper');
             daysWrapper.innerHTML = '';
             const todayStr = formatDate(new Date());
@@ -316,8 +294,6 @@
                 
                 const col = document.createElement('div');
                 col.className = 'day-column';
-                
-                // Заголовок дня
                 col.innerHTML = `
                     <div class="day-header ${isToday ? 'today' : ''}">
                         <div class="day-name">${daysRu[index]}</div>
@@ -325,50 +301,39 @@
                     </div>
                 `;
 
-                // Фон (сетка часов)
                 const slotsContainer = document.createElement('div');
                 slotsContainer.style.position = 'relative';
-                HOURS.forEach(h => {
+                HOURS.forEach(() => {
                     const slot = document.createElement('div');
                     slot.className = 'hour-slot';
                     slotsContainer.appendChild(slot);
                 });
 
-                // Блоки смен
                 const shifts = shiftsDB.filter(s => s.date === dateStr);
                 shifts.forEach(shift => {
                     const block = document.createElement('div');
                     block.className = `shift-block ${shift.master === 'Диана' ? 'diana' : 'nastya'}`;
                     
-                    // Вычисляем позицию и высоту
                     const startParts = shift.start.split(':');
                     const endParts = shift.end.split(':');
                     const startMins = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
                     const endMins = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
                     
-                    const topMins = startMins - (8 * 60); // Отступ от 8 утра
+                    const topMins = startMins - (8 * 60);
                     const durationMins = endMins - startMins;
                     
-                    block.style.top = `${(topMins / 60) * 40}px`; // 40px = высота часа
+                    block.style.top = `${(topMins / 60) * 40}px`;
                     block.style.height = `${(durationMins / 60) * 40}px`;
 
                     block.innerHTML = `
                         <div class="shift-title">${shift.master}</div>
                         <div class="shift-time">${shift.start}–${shift.end}</div>
-                        <div class="shift-comment">${shift.comment}</div>
                     `;
 
-                    // Если это смена текущего мастера, разрешаем редактирование
                     if (shift.master === currentMaster) {
-                        block.onclick = (e) => {
-                            e.stopPropagation();
-                            editShift(shift.id);
-                        };
+                        block.onclick = (e) => { e.stopPropagation(); editShift(shift.id); };
                     } else {
-                        block.onclick = (e) => {
-                            e.stopPropagation();
-                            showAlert(`${shift.master}: ${shift.start}-${shift.end} (${shift.comment})`);
-                        };
+                        block.onclick = (e) => { e.stopPropagation(); showAlert(`${shift.master}: ${shift.start}-${shift.end} (${shift.comment})`); };
                     }
                     slotsContainer.appendChild(block);
                 });
@@ -378,12 +343,8 @@
             });
         }
 
-        function changeWeek(dir) {
-            currentWeekOffset += dir;
-            renderGrid();
-        }
+        function changeWeek(dir) { currentWeekOffset += dir; renderGrid(); }
 
-        // --- ДОБАВЛЕНИЕ / РЕДАКТИРОВАНИЕ ---
         function openModal() {
             editingShiftId = null;
             document.getElementById('modal-title').innerText = "Новая смена";
@@ -434,7 +395,6 @@
             } catch (e) { hideLoading(); showAlert("Ошибка сети"); }
         }
 
-        // --- НАСТРОЙКИ ---
         function openSettingsModal() {
             document.getElementById('settings-name').value = currentMaster;
             document.getElementById('settings-password').value = '';
@@ -466,7 +426,6 @@
             } catch (e) { hideLoading(); showAlert("Ошибка сети"); }
         }
 
-        // --- СЕТКА ВРЕМЕНИ В МОДАЛКЕ ---
         function renderTimeGrids() {
             const gs = document.getElementById('grid-start');
             const ge = document.getElementById('grid-end');
@@ -486,7 +445,6 @@
             });
         }
 
-        // --- ЗАПУСК ---
         window.onload = async function() {
             await loadUsers();
             const saved = localStorage.getItem('nailsMaster');
