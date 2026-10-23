@@ -51,10 +51,29 @@
         .week-nav { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-main); }
         .week-range { font-weight: 700; font-size: 16px; }
 
-        /* СЕТКА */
-        .grid-container { display: flex; background: var(--card-bg); margin: 5px; border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; touch-action: pan-y; }
-        .animate-grid { animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        /* СЕТКА С ПЛАВНОЙ АНИМАЦИЕЙ */
+        .grid-container { 
+            display: flex; background: var(--card-bg); margin: 5px; border-radius: 12px; 
+            box-shadow: var(--shadow); overflow: hidden; touch-action: pan-y; 
+            /* Включаем аппаратное ускорение для плавности */
+            will-change: transform, opacity;
+        }
+        
+        /* Новая анимация: плавный въезд с прозрачностью */
+        .animate-grid {
+            animation: smoothSlide 0.35s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+        
+        @keyframes smoothSlide {
+            0% { 
+                opacity: 0.3; 
+                transform: translateX(15px) scale(0.98); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateX(0) scale(1); 
+            }
+        }
 
         .time-column { width: 36px; min-width: 36px; background: #FAFAFA; border-right: 1px solid #EEE; }
         .time-label { height: var(--hour-height); font-size: 9px; color: #999; text-align: right; padding-right: 3px; padding-top: 6px; border-bottom: 1px dashed #EEE; }
@@ -72,24 +91,21 @@
         .hour-slot { height: var(--hour-height); border-bottom: 1px solid #F0F0F0; cursor: pointer; transition: background 0.2s; }
         .hour-slot:active { background: #E3F2FD; }
 
-        /* БЛОК СМЕНЫ С ПЛАВНОЙ АНИМАЦИЕЙ */
+        /* БЛОК СМЕНЫ */
         .shift-block { 
             position: absolute; left: 1px; right: 1px; border-radius: 4px; padding: 2px; 
             font-size: 7px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
             cursor: grab; z-index: 2; display: flex; flex-direction: column;
-            /* Плавные переходы для всех свойств */
             transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
                         box-shadow 0.2s ease, 
                         opacity 0.2s ease;
         }
-        /* Состояние при захвате пальцем/мышью */
         .shift-block:active { 
             cursor: grabbing; 
             box-shadow: 0 8px 20px rgba(0,0,0,0.25); 
             transform: scale(1.1); 
             z-index: 100; 
         }
-        /* Состояние, когда элемент перетаскивают */
         .shift-block.dragging { 
             opacity: 0.4; 
             transform: scale(0.95); 
@@ -102,7 +118,7 @@
         .shift-title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .shift-time { font-size: 7px; font-weight: 600; }
 
-        /* СОВРЕМЕННОЕ НИЖНЕЕ МЕНЮ */
+        /* НИЖНЕЕ МЕНЮ */
         .bottom-nav { 
             position: fixed; bottom: 15px; left: 15px; right: 15px; height: 70px; 
             background: rgba(255, 255, 255, 0.85); 
@@ -151,7 +167,6 @@
         .close-cross:active { color: #333; }
         .modal h2 { font-size: 20px; margin-bottom: 15px; text-align: center; padding: 0 20px; }
 
-        /* Кнопки длительности */
         .duration-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
         .duration-btn { background: #F0F0F0; padding: 14px 0; text-align: center; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.2s; color: #555; border: 1px solid transparent; }
         .duration-btn.active { background: #E3F2FD; color: #1976D2; border-color: #90CAF9; }
@@ -419,7 +434,6 @@
             return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
         }
 
-        // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (С ПЛАВНОЙ АНИМАЦИЕЙ) ---
         let draggedElement = null;
         let draggedShiftId = null;
 
@@ -493,7 +507,6 @@
                             draggedElement = block;
                             draggedShiftId = shift.id;
                             e.dataTransfer.effectAllowed = 'move';
-                            // Небольшая задержка для анимации
                             setTimeout(() => block.classList.add('dragging'), 0);
                         };
                         block.ondragend = () => {
@@ -556,9 +569,10 @@
                 daysWrapper.appendChild(col);
             });
 
+            // Добавляем класс анимации после перерисовки
             const gridContainer = document.getElementById('grid-container');
             gridContainer.classList.remove('animate-grid');
-            void gridContainer.offsetWidth;
+            void gridContainer.offsetWidth; // Триггер рефлоу для перезапуска анимации
             gridContainer.classList.add('animate-grid');
         }
 
@@ -588,7 +602,7 @@
                 if (!res.ok) {
                     const err = await res.json(); 
                     showAlert(err.detail);
-                    renderGrid(); // Возвращаем как было
+                    renderGrid();
                 } else {
                     shift.date = newDate;
                     shift.start = newStartTime;
